@@ -288,7 +288,13 @@
             </div>
 
             <div class="chart-container full-width">
-                <h3>Suspension Types Breakdown</h3>
+                <h3>Suspension Types Breakdown - Year over Year Trends</h3>
+                <div class="filter-group" style="margin-bottom: 1rem;">
+                    <label for="typeChartYearFilter">Year Range:</label>
+                    <select id="typeChartYearFilter">
+                        <option value="all">All Years</option>
+                    </select>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="typeChart"></canvas>
                 </div>
@@ -592,6 +598,18 @@
                 groupChartCategoryFilter.addEventListener('change', updateDashboard);
             }
 
+            // Populate type chart year filter
+            const typeChartYearFilter = document.getElementById('typeChartYearFilter');
+            if (typeChartYearFilter) {
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    typeChartYearFilter.appendChild(option);
+                });
+                typeChartYearFilter.addEventListener('change', updateDashboard);
+            }
+
             // Add listener for comparison filter
             const comparisonFilter = document.getElementById('comparisonFilter');
             if (comparisonFilter) {
@@ -806,36 +824,107 @@
         }
 
         function createTypeChart(data) {
-            const types = {
-                'Violent (Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
-                'Violent (No Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
-                'Weapons': data.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
-                'Drugs': data.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
-                'Defiance Only': data.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
-                'Other': data.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
-            };
+            // Get filter value
+            const yearFilterValue = document.getElementById('typeChartYearFilter')?.value || 'all';
+
+            // Get unique years and filter if needed
+            let years = [...new Set(data.map(d => d.academicYear))].sort();
+            if (yearFilterValue !== 'all') {
+                years = [yearFilterValue];
+            }
+
+            // Calculate percentages for each suspension type by year
+            const typeNames = [
+                'Violent (Injury)',
+                'Violent (No Injury)',
+                'Weapons',
+                'Drugs',
+                'Defiance Only',
+                'Other'
+            ];
+
+            const typeFields = [
+                'suspensionsViolentWithInjury',
+                'suspensionsViolentNoInjury',
+                'suspensionsWeapons',
+                'suspensionsDrugs',
+                'suspensionsDefianceOnly',
+                'suspensionsOther'
+            ];
+
+            // Build datasets for each suspension type
+            const datasets = typeNames.map((typeName, idx) => {
+                const field = typeFields[idx];
+
+                // Calculate percentage for each year
+                const percentages = years.map(year => {
+                    const yearRecords = data.filter(d => d.academicYear === year);
+
+                    // Sum up this type for the year
+                    const typeTotal = yearRecords.reduce((sum, d) => sum + (d[field] || 0), 0);
+
+                    // Sum up all suspensions for the year
+                    const allSuspensions = yearRecords.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+
+                    // Calculate percentage
+                    return allSuspensions > 0 ? (typeTotal / allSuspensions) * 100 : 0;
+                });
+
+                return {
+                    label: typeName,
+                    data: percentages,
+                    borderColor: ['#D32F2F', '#F44336', '#FF5722', '#FF9800', '#FFC107', '#FFEB3B'][idx],
+                    backgroundColor: ['rgba(211, 47, 47, 0.1)', 'rgba(244, 67, 54, 0.1)', 'rgba(255, 87, 34, 0.1)',
+                                     'rgba(255, 152, 0, 0.1)', 'rgba(255, 193, 7, 0.1)', 'rgba(255, 235, 59, 0.1)'][idx],
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4
+                };
+            });
 
             const ctx = document.getElementById('typeChart').getContext('2d');
             if (charts.type) charts.type.destroy();
 
             charts.type = new Chart(ctx, {
-                type: 'doughnut',
+                type: 'line',
                 data: {
-                    labels: Object.keys(types),
-                    datasets: [{
-                        data: Object.values(types),
-                        backgroundColor: [
-                            '#D32F2F', '#F44336', '#FF5722', '#FF9800',
-                            '#FFC107', '#FFEB3B'
-                        ]
-                    }]
+                    labels: years,
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'right'
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Percentage of Total Suspensions (%)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(0) + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Academic Year'
+                            }
                         }
                     }
                 }
