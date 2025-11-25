@@ -234,8 +234,18 @@
         </div>
 
         <!-- Key Metrics -->
-        <div class="metrics-grid" id="metricsGrid">
-            <!-- Metrics will be populated by JavaScript -->
+        <div class="chart-container full-width" style="margin-bottom: 2rem;">
+            <h3>Key Metrics Summary</h3>
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label for="metricsYearFilter">Year:</label>
+                <select id="metricsYearFilter">
+                    <option value="all">All Years</option>
+                </select>
+            </div>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> These metrics aggregate data from the selected year(s). "Total Enrollment" and "Total Suspensions" are summed from official Total rows only (avoiding double-counting). "Students Suspended" counts unique students. "Avg Suspension Rate" is the mean suspension rate across selected years.</p>
+            <div class="metrics-grid" id="metricsGrid">
+                <!-- Metrics will be populated by JavaScript -->
+            </div>
         </div>
 
         <!-- Data Availability Notice -->
@@ -246,19 +256,17 @@
         <!-- Chart 1: Suspension Rate Trends Over Time -->
         <div class="chart-container full-width" style="margin-bottom: 2rem;">
             <h3>Suspension Rate Trends Over Time</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This chart shows the suspension rate (%) over time for the selected student group(s). The suspension rate is calculated as: (Students Suspended / Cumulative Enrollment) × 100. When "All Groups" is selected, the "Total" row for each year is used. Filters below affect ONLY this chart.</p>
             <div class="filter-group" style="margin-bottom: 1rem;">
-                <label for="yearFilter">Academic Year:</label>
-                <select id="yearFilter">
+                <label for="trendYearFilter">Academic Year:</label>
+                <select id="trendYearFilter">
                     <option value="all">All Years</option>
                 </select>
 
-                <label for="groupFilter">Student Group:</label>
-                <select id="groupFilter">
+                <label for="trendGroupFilter">Student Group:</label>
+                <select id="trendGroupFilter">
                     <option value="all">All Groups</option>
                 </select>
-            </div>
-            <div class="alert alert-info" id="groupList" style="margin-bottom: 1rem;">
-                <!-- Group list will be populated by JavaScript -->
             </div>
             <div class="chart-wrapper">
                 <canvas id="trendChart"></canvas>
@@ -268,6 +276,7 @@
         <!-- Chart 2: Suspension Rates by Student Group -->
         <div class="chart-container full-width" style="margin-bottom: 2rem;">
             <h3>Suspension Rates by Student Group</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This horizontal bar chart compares suspension rates across different student groups for a selected year. Groups are sorted by suspension rate (highest to lowest). You can filter by category type (Race vs Non-Race). Filters below affect ONLY this chart.</p>
             <div class="filter-group" style="margin-bottom: 1rem;">
                 <label for="groupChartYearFilter">Year:</label>
                 <select id="groupChartYearFilter">
@@ -288,6 +297,7 @@
         <!-- Chart 3: Suspension Types Breakdown -->
         <div class="chart-container full-width" style="margin-bottom: 2rem;">
             <h3>Suspension Types Breakdown - Year over Year Trends</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This line chart shows the percentage composition of suspension types over time. Each line represents one suspension type (Violent with Injury, Violent without Injury, Weapons, Drugs, Defiance Only, Other). Percentages are calculated as: (Type Count / Total Suspensions) × 100 for each year. This shows how the composition of suspension types changes over time, not the volume. Filters below affect ONLY this chart.</p>
             <div class="filter-group" style="margin-bottom: 1rem;">
                 <label for="typeChartYearFilter">Year Range:</label>
                 <select id="typeChartYearFilter">
@@ -302,7 +312,7 @@
         <!-- Chart 4: Enrollment vs Suspensions (Static - No Filters) -->
         <div class="chart-container full-width" style="margin-bottom: 2rem;">
             <h3>Enrollment vs Suspensions</h3>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">This chart shows all years and all student groups combined.</p>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This dual-axis bar chart shows total enrollment (left axis) and total suspensions (right axis) for each academic year. Data is from official "Total" rows only (avoiding double-counting). This chart is static and shows all available years. No filters affect this chart.</p>
             <div class="chart-wrapper">
                 <canvas id="enrollmentChart"></canvas>
             </div>
@@ -311,6 +321,7 @@
         <!-- Chart 5: Group Comparison Over Time -->
         <div class="chart-container full-width" style="margin-bottom: 2rem;">
             <h3>Group Comparison Over Time</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This multi-line chart compares suspension rates across selected groups over all available years. Choose to compare Gender, Race/Ethnicity, Other Demographics, or the Top 5 groups with highest total suspension incidents. Each line represents one student group's suspension rate trend. Filters below affect ONLY this chart.</p>
             <div class="filter-group" style="margin-bottom: 1rem;">
                 <label for="comparisonFilter">Compare:</label>
                 <select id="comparisonFilter">
@@ -328,6 +339,7 @@
         <!-- Data Table -->
         <div class="chart-container full-width">
             <h3>Detailed Data Table</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This table displays all suspension data for selected years. Each row represents one student group for one academic year. "Total" rows (highlighted in yellow) represent school-wide totals. All suspension type columns (Violent with/without Injury, Weapons, Drugs, Defiance Only, Other) are included. Duplicate "Total" rows from the race data file are excluded to avoid double-counting. Use checkboxes to select years, then click "Download CSV" to export.</p>
             <div class="filter-group" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
                 <div>
                     <strong>Filter by Year:</strong>
@@ -351,7 +363,10 @@
                             <th>Suspension Rate</th>
                             <th>Violent (Injury)</th>
                             <th>Violent (No Injury)</th>
+                            <th>Weapons</th>
+                            <th>Drugs</th>
                             <th>Defiance Only</th>
+                            <th>Other</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -561,36 +576,73 @@
         function initializeDashboard() {
             populateFilters();
             computeRaceAvailability();
-            const filteredData = getFilteredData();
-            updateMetrics(filteredData);
-            createCharts(filteredData);
-            updateTable(); // Table has its own year checkboxes now
-            updateGroupList(filteredData);
+
+            // Initialize metrics with their own filter
+            const metricsData = getFilteredDataForMetrics();
+            updateMetrics(metricsData);
+
+            // Initialize trend chart with its own filter
+            const trendData = getFilteredDataForTrend();
+            createTrendChart(trendData);
+
+            // Initialize other charts with all data
+            createGroupChart(allData);
+            createTypeChart(allData);
+            createEnrollmentChart(allData);
+            createGenderChart(allData);
+
+            // Initialize table with its own year checkboxes
+            updateTable();
         }
 
         function populateFilters() {
             const years = [...new Set(allData.map(d => d.academicYear))].sort();
             const groups = [...new Set(allData.map(d => d.reportingCategoryDescription))].sort();
 
-            const yearFilter = document.getElementById('yearFilter');
-            const groupFilter = document.getElementById('groupFilter');
+            // Populate metrics year filter
+            const metricsYearFilter = document.getElementById('metricsYearFilter');
+            if (metricsYearFilter) {
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    metricsYearFilter.appendChild(option);
+                });
+                metricsYearFilter.addEventListener('change', () => {
+                    const filteredData = getFilteredDataForMetrics();
+                    updateMetrics(filteredData);
+                });
+            }
 
-            years.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                yearFilter.appendChild(option);
-            });
+            // Populate trend chart filters
+            const trendYearFilter = document.getElementById('trendYearFilter');
+            const trendGroupFilter = document.getElementById('trendGroupFilter');
 
-            groups.forEach(group => {
-                const option = document.createElement('option');
-                option.value = group;
-                option.textContent = group;
-                groupFilter.appendChild(option);
-            });
+            if (trendYearFilter) {
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    trendYearFilter.appendChild(option);
+                });
+                trendYearFilter.addEventListener('change', () => {
+                    const filteredData = getFilteredDataForTrend();
+                    createTrendChart(filteredData);
+                });
+            }
 
-            yearFilter.addEventListener('change', updateDashboard);
-            groupFilter.addEventListener('change', updateDashboard);
+            if (trendGroupFilter) {
+                groups.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group;
+                    option.textContent = group;
+                    trendGroupFilter.appendChild(option);
+                });
+                trendGroupFilter.addEventListener('change', () => {
+                    const filteredData = getFilteredDataForTrend();
+                    createTrendChart(filteredData);
+                });
+            }
 
             // Populate group chart year filter
             const groupChartYearFilter = document.getElementById('groupChartYearFilter');
@@ -601,13 +653,13 @@
                     option.textContent = year;
                     groupChartYearFilter.appendChild(option);
                 });
-                groupChartYearFilter.addEventListener('change', updateDashboard);
+                groupChartYearFilter.addEventListener('change', () => createGroupChart(allData));
             }
 
             // Add listener for group chart category filter
             const groupChartCategoryFilter = document.getElementById('groupChartCategoryFilter');
             if (groupChartCategoryFilter) {
-                groupChartCategoryFilter.addEventListener('change', updateDashboard);
+                groupChartCategoryFilter.addEventListener('change', () => createGroupChart(allData));
             }
 
             // Populate type chart year filter
@@ -619,13 +671,13 @@
                     option.textContent = year;
                     typeChartYearFilter.appendChild(option);
                 });
-                typeChartYearFilter.addEventListener('change', updateDashboard);
+                typeChartYearFilter.addEventListener('change', () => createTypeChart(allData));
             }
 
             // Add listener for comparison filter
             const comparisonFilter = document.getElementById('comparisonFilter');
             if (comparisonFilter) {
-                comparisonFilter.addEventListener('change', updateDashboard);
+                comparisonFilter.addEventListener('change', () => createGenderChart(allData));
             }
 
             // Populate table year checkboxes
@@ -665,9 +717,18 @@
             return isNaN(yearNumber) ? null : yearNumber;
         }
 
-        function getFilteredData() {
-            const yearFilter = document.getElementById('yearFilter').value;
-            const groupFilter = document.getElementById('groupFilter').value;
+        function getFilteredDataForMetrics() {
+            const yearFilter = document.getElementById('metricsYearFilter')?.value || 'all';
+
+            return allData.filter(d => {
+                const yearMatch = yearFilter === 'all' || d.academicYear === yearFilter;
+                return yearMatch;
+            });
+        }
+
+        function getFilteredDataForTrend() {
+            const yearFilter = document.getElementById('trendYearFilter')?.value || 'all';
+            const groupFilter = document.getElementById('trendGroupFilter')?.value || 'all';
 
             return allData.filter(d => {
                 const yearMatch = yearFilter === 'all' || d.academicYear === yearFilter;
@@ -729,14 +790,6 @@
             document.getElementById('metricsGrid').innerHTML = metricsHTML;
         }
 
-        function createCharts(data) {
-            createTrendChart(data);
-            createGroupChart(data);
-            createTypeChart(data);
-            createEnrollmentChart(allData); // Always use ALL data (not filtered)
-            createGenderChart(data);
-        }
-
         function createTrendChart(data) {
             const years = [...new Set(data.map(d => d.academicYear))].sort();
             const rates = years.map(year => {
@@ -749,6 +802,10 @@
             const ctx = document.getElementById('trendChart').getContext('2d');
             if (charts.trend) charts.trend.destroy();
 
+            // Larger points for better visibility, especially with fewer data points
+            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
+            const pointHoverRadius = pointRadius + 2;
+
             charts.trend = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -760,7 +817,12 @@
                         backgroundColor: 'rgba(44, 95, 141, 0.1)',
                         borderWidth: 3,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: pointRadius,
+                        pointHoverRadius: pointHoverRadius,
+                        pointBackgroundColor: '#2C5F8D',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
                     }]
                 },
                 options: {
@@ -901,6 +963,10 @@
             ];
 
             // Build datasets for each suspension type
+            // Larger points for better visibility, especially with fewer years
+            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
+            const pointHoverRadius = pointRadius + 2;
+
             const datasets = typeNames.map((typeName, idx) => {
                 const field = typeFields[idx];
 
@@ -918,15 +984,22 @@
                     return allSuspensions > 0 ? (typeTotal / allSuspensions) * 100 : 0;
                 });
 
+                const borderColor = ['#D32F2F', '#F44336', '#FF5722', '#FF9800', '#FFC107', '#FFEB3B'][idx];
+
                 return {
                     label: typeName,
                     data: percentages,
-                    borderColor: ['#D32F2F', '#F44336', '#FF5722', '#FF9800', '#FFC107', '#FFEB3B'][idx],
+                    borderColor: borderColor,
                     backgroundColor: ['rgba(211, 47, 47, 0.1)', 'rgba(244, 67, 54, 0.1)', 'rgba(255, 87, 34, 0.1)',
                                      'rgba(255, 152, 0, 0.1)', 'rgba(255, 193, 7, 0.1)', 'rgba(255, 235, 59, 0.1)'][idx],
                     borderWidth: 2,
                     fill: false,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointRadius: pointRadius,
+                    pointHoverRadius: pointHoverRadius,
+                    pointBackgroundColor: borderColor,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1
                 };
             });
 
@@ -1142,6 +1215,10 @@
                 '#8BC34A'   // Light Green
             ];
 
+            // Larger points for better visibility
+            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
+            const pointHoverRadius = pointRadius + 2;
+
             const datasets = groupsToCompare.map((group, idx) => {
                 const data = years.map(year => {
                     const record = genderData.find(d =>
@@ -1160,7 +1237,12 @@
                     borderColor: color,
                     backgroundColor: backgroundColor,
                     borderWidth: 2,
-                    fill: false
+                    fill: false,
+                    pointRadius: pointRadius,
+                    pointHoverRadius: pointHoverRadius,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1
                 };
             });
 
@@ -1238,7 +1320,10 @@
                         <td>${d.suspensionRate !== null ? (d.suspensionRate * 100).toFixed(1) + '%' : 'N/A'}</td>
                         <td>${d.suspensionsViolentWithInjury !== null ? d.suspensionsViolentWithInjury : 'N/A'}</td>
                         <td>${d.suspensionsViolentNoInjury !== null ? d.suspensionsViolentNoInjury : 'N/A'}</td>
+                        <td>${d.suspensionsWeapons !== null ? d.suspensionsWeapons : 'N/A'}</td>
+                        <td>${d.suspensionsDrugs !== null ? d.suspensionsDrugs : 'N/A'}</td>
                         <td>${d.suspensionsDefianceOnly !== null ? d.suspensionsDefianceOnly : 'N/A'}</td>
+                        <td>${d.suspensionsOther !== null ? d.suspensionsOther : 'N/A'}</td>
                     </tr>
                 `;
             }).join('');
@@ -1383,14 +1468,6 @@
                     combined data and respond to the filters above.
                 `;
             }
-        }
-
-        function updateDashboard() {
-            const filteredData = getFilteredData();
-            updateMetrics(filteredData);
-            createCharts(filteredData);
-            // Table is not updated here - it has its own year checkboxes
-            updateGroupList(filteredData);
         }
 
         // Initialize dashboard when page loads
