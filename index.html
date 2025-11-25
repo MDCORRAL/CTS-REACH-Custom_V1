@@ -290,7 +290,16 @@
             </div>
 
             <div class="chart-container">
-                <h3>Gender Comparison</h3>
+                <h3>Group Comparison Over Time</h3>
+                <div class="filter-group" style="margin-bottom: 1rem;">
+                    <label for="comparisonFilter">Compare:</label>
+                    <select id="comparisonFilter">
+                        <option value="gender">Gender Categories</option>
+                        <option value="race">Race/Ethnicity Groups</option>
+                        <option value="other">Other Categories</option>
+                        <option value="top5">Top 5 Highest Suspension Groups</option>
+                    </select>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="genderChart"></canvas>
                 </div>
@@ -552,6 +561,12 @@
 
             yearFilter.addEventListener('change', updateDashboard);
             groupFilter.addEventListener('change', updateDashboard);
+
+            // Add listener for comparison filter
+            const comparisonFilter = document.getElementById('comparisonFilter');
+            if (comparisonFilter) {
+                comparisonFilter.addEventListener('change', updateDashboard);
+            }
         }
 
         function parseYearValue(yearLabel) {
@@ -838,26 +853,112 @@
             });
         }
 
+        function categorizeGroup(groupName) {
+            const raceGroups = [
+                'American Indian or Alaska Native',
+                'Asian',
+                'Black or African American',
+                'African American',
+                'Filipino',
+                'Hispanic or Latino',
+                'Native Hawaiian or Pacific Islander',
+                'Pacific Islander',
+                'Two or More Races',
+                'White'
+            ];
+
+            const genderGroups = [
+                'Male',
+                'Female',
+                'Non-Binary Gender (Beginning 2019-20)'
+            ];
+
+            if (raceGroups.includes(groupName)) return 'race';
+            if (genderGroups.includes(groupName)) return 'gender';
+            if (groupName === 'Total') return 'total';
+            return 'other';
+        }
+
+        function getTop5SuspensionGroups(data) {
+            const groupTotals = {};
+
+            data.forEach(record => {
+                const group = record.reportingCategoryDescription;
+                if (group === 'Total') return; // Skip total
+
+                if (!groupTotals[group]) {
+                    groupTotals[group] = 0;
+                }
+                groupTotals[group] += (record.totalSuspensions || 0);
+            });
+
+            return Object.entries(groupTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(entry => entry[0]);
+        }
+
         function createGenderChart(data) {
+            const comparisonType = document.getElementById('comparisonFilter').value;
+            let groupsToCompare = [];
+            let chartTitle = 'Group Comparison Over Time';
+
+            if (comparisonType === 'gender') {
+                groupsToCompare = ['Male', 'Female', 'Non-Binary Gender (Beginning 2019-20)'];
+                chartTitle = 'Gender Categories';
+            } else if (comparisonType === 'race') {
+                const allGroups = [...new Set(data.map(d => d.reportingCategoryDescription))];
+                groupsToCompare = allGroups.filter(g => categorizeGroup(g) === 'race');
+                chartTitle = 'Race/Ethnicity Groups';
+            } else if (comparisonType === 'other') {
+                const allGroups = [...new Set(data.map(d => d.reportingCategoryDescription))];
+                groupsToCompare = allGroups.filter(g => {
+                    const category = categorizeGroup(g);
+                    return category !== 'race' && category !== 'gender' && category !== 'total';
+                });
+                chartTitle = 'Other Categories';
+            } else if (comparisonType === 'top5') {
+                groupsToCompare = getTop5SuspensionGroups(data);
+                chartTitle = 'Top 5 Highest Suspension Groups (by total incidents)';
+            }
+
             const genderData = data.filter(d =>
-                ['Male', 'Female', 'Non-Binary Gender (Beginning 2019-20)'].includes(d.reportingCategoryDescription)
+                groupsToCompare.includes(d.reportingCategoryDescription)
             );
 
             const years = [...new Set(genderData.map(d => d.academicYear))].sort();
 
-            const datasets = ['Male', 'Female', 'Non-Binary Gender (Beginning 2019-20)'].map((gender, idx) => {
+            // Color palette for multiple groups
+            const colorPalette = [
+                '#2C5F8D',  // Primary blue
+                '#FF8A65',  // Accent orange
+                '#9C27B0',  // Purple
+                '#4CAF50',  // Green
+                '#FFC107',  // Yellow
+                '#E91E63',  // Pink
+                '#00BCD4',  // Cyan
+                '#FF5722',  // Deep Orange
+                '#3F51B5',  // Indigo
+                '#8BC34A'   // Light Green
+            ];
+
+            const datasets = groupsToCompare.map((group, idx) => {
                 const data = years.map(year => {
                     const record = genderData.find(d =>
-                        d.academicYear === year && d.reportingCategoryDescription === gender
+                        d.academicYear === year && d.reportingCategoryDescription === group
                     );
                     return record ? (record.suspensionRate * 100) : null;
                 });
 
+                const color = colorPalette[idx % colorPalette.length];
+                const rgbaColor = color.replace('#', '').match(/.{2}/g).map(h => parseInt(h, 16));
+                const backgroundColor = `rgba(${rgbaColor[0]}, ${rgbaColor[1]}, ${rgbaColor[2]}, 0.1)`;
+
                 return {
-                    label: gender.replace(' (Beginning 2019-20)', ''),
+                    label: group.replace(' (Beginning 2019-20)', ''),
                     data: data,
-                    borderColor: ['#2C5F8D', '#FF8A65', '#9C27B0'][idx],
-                    backgroundColor: ['rgba(44, 95, 141, 0.1)', 'rgba(255, 138, 101, 0.1)', 'rgba(156, 39, 176, 0.1)'][idx],
+                    borderColor: color,
+                    backgroundColor: backgroundColor,
                     borderWidth: 2,
                     fill: false
                 };
