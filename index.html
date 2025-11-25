@@ -327,9 +327,6 @@
                 const response = await fetch('dorothy_camp_clean_data.json');
                 allData = await response.json();
 
-                // Filter out records with null reporting category descriptions (suppressed data)
-                allData = allData.filter(d => d.reportingCategoryDescription && d.reportingCategoryDescription !== 'Not Reported');
-
                 initializeDashboard();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -339,9 +336,10 @@
 
         function initializeDashboard() {
             populateFilters();
-            updateMetrics();
-            createCharts();
-            updateTable();
+            const filteredData = getFilteredData();
+            updateMetrics(filteredData);
+            createCharts(filteredData);
+            updateTable(filteredData);
         }
 
         function populateFilters() {
@@ -380,20 +378,22 @@
             });
         }
 
-        function updateMetrics() {
-            const data = getFilteredData();
-            const totalRecords = data.filter(d => d.reportingCategoryDescription === 'Total');
+        function updateMetrics(data) {
+            const totalEnrollment = data.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
+            const totalSuspensions = data.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+            const totalStudentsSuspended = data.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
 
-            const totalEnrollment = totalRecords.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
-            const totalSuspensions = totalRecords.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
-            const totalStudentsSuspended = totalRecords.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
+            const rateRecords = data.filter(d => d.suspensionRate !== null);
+            const avgSuspensionRate = rateRecords.length
+                ? rateRecords.reduce((sum, d) => sum + d.suspensionRate, 0) / rateRecords.length
+                : 0;
 
-            const avgSuspensionRate = totalRecords.filter(d => d.suspensionRate !== null).reduce((sum, d, _, arr) => {
-                return sum + d.suspensionRate / arr.length;
-            }, 0);
-
-            const latestYear = Math.max(...totalRecords.map(d => d.academicYear));
-            const latestYearData = totalRecords.find(d => d.academicYear === latestYear);
+            const years = [...new Set(data.map(d => d.academicYear))];
+            const latestYear = years.length ? Math.max(...years) : null;
+            const latestYearData = latestYear !== null
+                ? data.find(d => d.academicYear === latestYear && d.reportingCategoryDescription === 'Total')
+                    || data.find(d => d.academicYear === latestYear)
+                : null;
 
             const metricsHTML = `
                 <div class="metric-card">
@@ -414,26 +414,27 @@
                 <div class="metric-card">
                     <div class="metric-label">Avg Suspension Rate</div>
                     <div class="metric-value">${(avgSuspensionRate * 100).toFixed(1)}%</div>
-                    <div class="metric-subtitle">Mean across periods</div>
+                    <div class="metric-subtitle">Mean across selected records</div>
                 </div>
             `;
 
             document.getElementById('metricsGrid').innerHTML = metricsHTML;
         }
 
-        function createCharts() {
-            createTrendChart();
-            createGroupChart();
-            createTypeChart();
-            createEnrollmentChart();
-            createGenderChart();
+        function createCharts(data) {
+            createTrendChart(data);
+            createGroupChart(data);
+            createTypeChart(data);
+            createEnrollmentChart(data);
+            createGenderChart(data);
         }
 
-        function createTrendChart() {
-            const totalData = allData.filter(d => d.reportingCategoryDescription === 'Total');
-            const years = [...new Set(totalData.map(d => d.academicYear))].sort();
+        function createTrendChart(data) {
+            const years = [...new Set(data.map(d => d.academicYear))].sort();
             const rates = years.map(year => {
-                const record = totalData.find(d => d.academicYear === year);
+                const yearRecords = data.filter(d => d.academicYear === year && d.suspensionRate !== null);
+                const totalRecord = yearRecords.find(d => d.reportingCategoryDescription === 'Total');
+                const record = totalRecord || yearRecords[0];
                 return record ? (record.suspensionRate * 100) : null;
             });
 
@@ -476,9 +477,10 @@
             });
         }
 
-        function createGroupChart() {
-            const latestYear = Math.max(...allData.map(d => d.academicYear));
-            const latestData = allData.filter(d =>
+        function createGroupChart(data) {
+            const years = [...new Set(data.map(d => d.academicYear))];
+            const latestYear = years.length ? Math.max(...years) : null;
+            const latestData = latestYear === null ? [] : data.filter(d =>
                 d.academicYear === latestYear &&
                 d.reportingCategoryDescription !== 'Total' &&
                 d.suspensionRate !== null
@@ -526,16 +528,14 @@
             });
         }
 
-        function createTypeChart() {
-            const totalData = allData.filter(d => d.reportingCategoryDescription === 'Total');
-
+        function createTypeChart(data) {
             const types = {
-                'Violent (Injury)': totalData.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
-                'Violent (No Injury)': totalData.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
-                'Weapons': totalData.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
-                'Drugs': totalData.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
-                'Defiance Only': totalData.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
-                'Other': totalData.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
+                'Violent (Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
+                'Violent (No Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
+                'Weapons': data.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
+                'Drugs': data.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
+                'Defiance Only': data.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
+                'Other': data.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
             };
 
             const ctx = document.getElementById('typeChart').getContext('2d');
@@ -565,18 +565,17 @@
             });
         }
 
-        function createEnrollmentChart() {
-            const totalData = allData.filter(d => d.reportingCategoryDescription === 'Total');
-            const years = [...new Set(totalData.map(d => d.academicYear))].sort();
+        function createEnrollmentChart(data) {
+            const years = [...new Set(data.map(d => d.academicYear))].sort();
 
             const enrollment = years.map(year => {
-                const record = totalData.find(d => d.academicYear === year);
-                return record ? record.cumulativeEnrollment : 0;
+                const records = data.filter(d => d.academicYear === year);
+                return records.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
             });
 
             const suspensions = years.map(year => {
-                const record = totalData.find(d => d.academicYear === year);
-                return record ? record.totalSuspensions : 0;
+                const records = data.filter(d => d.academicYear === year);
+                return records.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
             });
 
             const ctx = document.getElementById('enrollmentChart').getContext('2d');
@@ -631,8 +630,8 @@
             });
         }
 
-        function createGenderChart() {
-            const genderData = allData.filter(d =>
+        function createGenderChart(data) {
+            const genderData = data.filter(d =>
                 ['Male', 'Female', 'Non-Binary Gender (Beginning 2019-20)'].includes(d.reportingCategoryDescription)
             );
 
@@ -687,8 +686,7 @@
             });
         }
 
-        function updateTable() {
-            const data = getFilteredData();
+        function updateTable(data) {
             const tableBody = document.getElementById('tableBody');
 
             const rows = data.map(d => {
@@ -712,8 +710,10 @@
         }
 
         function updateDashboard() {
-            updateMetrics();
-            updateTable();
+            const filteredData = getFilteredData();
+            updateMetrics(filteredData);
+            createCharts(filteredData);
+            updateTable(filteredData);
         }
 
         // Initialize dashboard when page loads
