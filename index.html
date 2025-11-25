@@ -400,6 +400,14 @@
         ];
         let missingRaceGroups = [];
 
+        // Ensure chart points are always visible and easy to hover
+        Chart.defaults.elements.point.radius = 6;
+        Chart.defaults.elements.point.hoverRadius = 9;
+        Chart.defaults.elements.point.hitRadius = 12;
+        Chart.defaults.elements.point.backgroundColor = '#2C5F8D';
+        Chart.defaults.elements.point.borderColor = '#ffffff';
+        Chart.defaults.elements.point.borderWidth = 2;
+
         // Load and process data
         async function loadData() {
             try {
@@ -818,8 +826,12 @@
             if (charts.trend) charts.trend.destroy();
 
             // Larger points for better visibility, especially with fewer data points
-            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
-            const pointHoverRadius = pointRadius + 2;
+            const pointRadius = Math.max(
+                Chart.defaults.elements.point.radius,
+                years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4)
+            );
+            const pointHoverRadius = Math.max(Chart.defaults.elements.point.hoverRadius, pointRadius + 2);
+            const pointHitRadius = Math.max(Chart.defaults.elements.point.hitRadius, pointHoverRadius + 2);
 
             charts.trend = new Chart(ctx, {
                 type: 'line',
@@ -835,7 +847,7 @@
                         tension: 0.4,
                         pointRadius: pointRadius,
                         pointHoverRadius: pointHoverRadius,
-                        pointHitRadius: pointHoverRadius + 2,
+                        pointHitRadius: pointHitRadius,
                         pointStyle: 'circle',
                         pointBackgroundColor: '#2C5F8D',
                         pointBorderColor: '#fff',
@@ -981,8 +993,12 @@
 
             // Build datasets for each suspension type
             // Larger points for better visibility, especially with fewer years
-            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
-            const pointHoverRadius = pointRadius + 2;
+            const pointRadius = Math.max(
+                Chart.defaults.elements.point.radius,
+                years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4)
+            );
+            const pointHoverRadius = Math.max(Chart.defaults.elements.point.hoverRadius, pointRadius + 2);
+            const pointHitRadius = Math.max(Chart.defaults.elements.point.hitRadius, pointHoverRadius + 2);
 
             const lineColors = ['#003B5C', '#005587', '#2774AE', '#8BB8E8', '#FFB81C', '#FFC72C'];
             const fillColors = [
@@ -1023,7 +1039,7 @@
                     tension: 0.4,
                     pointRadius: pointRadius,
                     pointHoverRadius: pointHoverRadius,
-                    pointHitRadius: pointHoverRadius + 2,
+                    pointHitRadius: pointHitRadius,
                     pointStyle: 'circle',
                     pointBackgroundColor: borderColor,
                     pointBorderColor: '#fff',
@@ -1244,8 +1260,12 @@
             ];
 
             // Larger points for better visibility
-            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
-            const pointHoverRadius = pointRadius + 2;
+            const pointRadius = Math.max(
+                Chart.defaults.elements.point.radius,
+                years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4)
+            );
+            const pointHoverRadius = Math.max(Chart.defaults.elements.point.hoverRadius, pointRadius + 2);
+            const pointHitRadius = Math.max(Chart.defaults.elements.point.hitRadius, pointHoverRadius + 2);
 
             const datasets = groupsToCompare.map((group, idx) => {
                 const data = years.map(year => {
@@ -1268,7 +1288,7 @@
                     fill: false,
                     pointRadius: pointRadius,
                     pointHoverRadius: pointHoverRadius,
-                    pointHitRadius: pointHoverRadius + 2,
+                    pointHitRadius: pointHitRadius,
                     pointStyle: 'circle',
                     pointBackgroundColor: color,
                     pointBorderColor: '#fff',
