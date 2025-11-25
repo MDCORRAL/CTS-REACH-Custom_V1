@@ -420,6 +420,21 @@
             }
         });
 
+        const percentLabelFormatter = (value) => {
+            if (value === null || value === undefined || isNaN(value)) return 'N/A';
+            return `${Number(value).toFixed(1)}%`;
+        };
+
+        function getPercentDatalabelsConfig(overrides = {}) {
+            return {
+                display: ctx => ctx.raw !== null && ctx.raw !== undefined && !isNaN(ctx.raw),
+                align: 'top',
+                anchor: 'end',
+                formatter: percentLabelFormatter,
+                ...overrides
+            };
+        }
+
         // Load and process data
         async function loadData() {
             try {
@@ -875,12 +890,7 @@
                             display: true,
                             position: 'top'
                         },
-                        datalabels: {
-                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
-                            align: 'top',
-                            anchor: 'end',
-                            formatter: value => `${value.toFixed(1)}%`
-                        }
+                        datalabels: getPercentDatalabelsConfig()
                     },
                     scales: {
                         y: {
@@ -967,12 +977,7 @@
                         legend: {
                             display: false
                         },
-                        datalabels: {
-                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
-                            align: 'end',
-                            anchor: 'end',
-                            formatter: value => `${value.toFixed(1)}%`
-                        }
+                        datalabels: getPercentDatalabelsConfig()
                     },
                     scales: {
                         x: {
@@ -1096,12 +1101,7 @@
                                 }
                             }
                         },
-                        datalabels: {
-                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
-                            align: 'top',
-                            anchor: 'end',
-                            formatter: value => `${value.toFixed(1)}%`
-                        }
+                        datalabels: getPercentDatalabelsConfig()
                     },
                     scales: {
                         y: {
@@ -1344,12 +1344,7 @@
                             display: true,
                             position: 'top'
                         },
-                        datalabels: {
-                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
-                            align: 'top',
-                            anchor: 'end',
-                            formatter: value => `${value.toFixed(1)}%`
-                        }
+                        datalabels: getPercentDatalabelsConfig()
                     },
                     scales: {
                         y: {
