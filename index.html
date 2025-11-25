@@ -251,6 +251,9 @@
                     <option value="all">All Groups</option>
                 </select>
             </div>
+            <div class="alert alert-info" id="groupList" style="margin-top: 1rem;">
+                <!-- Group list will be populated by JavaScript -->
+            </div>
         </div>
 
         <!-- Charts -->
@@ -327,9 +330,6 @@
                 const response = await fetch('dorothy_camp_clean_data.json');
                 allData = await response.json();
 
-                // Filter out records with null reporting category descriptions (suppressed data)
-                allData = allData.filter(d => d.reportingCategoryDescription && d.reportingCategoryDescription !== 'Not Reported');
-
                 initializeDashboard();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -339,9 +339,11 @@
 
         function initializeDashboard() {
             populateFilters();
-            updateMetrics();
-            createCharts();
-            updateTable();
+            const filteredData = getFilteredData();
+            updateMetrics(filteredData);
+            createCharts(filteredData);
+            updateTable(filteredData);
+            updateGroupList(filteredData);
         }
 
         function populateFilters() {
@@ -369,6 +371,13 @@
             groupFilter.addEventListener('change', updateDashboard);
         }
 
+        function parseYearValue(yearLabel) {
+            if (!yearLabel) return null;
+            const parts = yearLabel.split('-');
+            const yearNumber = parseInt(parts[0], 10);
+            return isNaN(yearNumber) ? null : yearNumber;
+        }
+
         function getFilteredData() {
             const yearFilter = document.getElementById('yearFilter').value;
             const groupFilter = document.getElementById('groupFilter').value;
@@ -380,20 +389,25 @@
             });
         }
 
-        function updateMetrics() {
-            const data = getFilteredData();
-            const totalRecords = data.filter(d => d.reportingCategoryDescription === 'Total');
+        function updateMetrics(data) {
+            const totalEnrollment = data.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
+            const totalSuspensions = data.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+            const totalStudentsSuspended = data.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
 
-            const totalEnrollment = totalRecords.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
-            const totalSuspensions = totalRecords.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
-            const totalStudentsSuspended = totalRecords.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
+            const rateRecords = data.filter(d => d.suspensionRate !== null);
+            const avgSuspensionRate = rateRecords.length
+                ? rateRecords.reduce((sum, d) => sum + d.suspensionRate, 0) / rateRecords.length
+                : 0;
 
-            const avgSuspensionRate = totalRecords.filter(d => d.suspensionRate !== null).reduce((sum, d, _, arr) => {
-                return sum + d.suspensionRate / arr.length;
-            }, 0);
-
-            const latestYear = Math.max(...totalRecords.map(d => d.academicYear));
-            const latestYearData = totalRecords.find(d => d.academicYear === latestYear);
+            const years = [...new Set(data.map(d => d.academicYear))];
+            const latestYear = years
+                .map(year => ({ label: year, value: parseYearValue(year) }))
+                .filter(y => y.value !== null)
+                .sort((a, b) => b.value - a.value)[0]?.label || null;
+            const latestYearData = latestYear !== null
+                ? data.find(d => d.academicYear === latestYear && d.reportingCategoryDescription === 'Total')
+                    || data.find(d => d.academicYear === latestYear)
+                : null;
 
             const metricsHTML = `
                 <div class="metric-card">
@@ -414,26 +428,27 @@
                 <div class="metric-card">
                     <div class="metric-label">Avg Suspension Rate</div>
                     <div class="metric-value">${(avgSuspensionRate * 100).toFixed(1)}%</div>
-                    <div class="metric-subtitle">Mean across periods</div>
+                    <div class="metric-subtitle">Mean across selected records</div>
                 </div>
             `;
 
             document.getElementById('metricsGrid').innerHTML = metricsHTML;
         }
 
-        function createCharts() {
-            createTrendChart();
-            createGroupChart();
-            createTypeChart();
-            createEnrollmentChart();
-            createGenderChart();
+        function createCharts(data) {
+            createTrendChart(data);
+            createGroupChart(data);
+            createTypeChart(data);
+            createEnrollmentChart(data);
+            createGenderChart(data);
         }
 
-        function createTrendChart() {
-            const totalData = allData.filter(d => d.reportingCategoryDescription === 'Total');
-            const years = [...new Set(totalData.map(d => d.academicYear))].sort();
+        function createTrendChart(data) {
+            const years = [...new Set(data.map(d => d.academicYear))].sort();
             const rates = years.map(year => {
-                const record = totalData.find(d => d.academicYear === year);
+                const yearRecords = data.filter(d => d.academicYear === year && d.suspensionRate !== null);
+                const totalRecord = yearRecords.find(d => d.reportingCategoryDescription === 'Total');
+                const record = totalRecord || yearRecords[0];
                 return record ? (record.suspensionRate * 100) : null;
             });
 
@@ -476,16 +491,28 @@
             });
         }
 
-        function createGroupChart() {
-            const latestYear = Math.max(...allData.map(d => d.academicYear));
-            const latestData = allData.filter(d =>
-                d.academicYear === latestYear &&
-                d.reportingCategoryDescription !== 'Total' &&
-                d.suspensionRate !== null
-            );
+        function createGroupChart(data) {
+            const latestData = data
+                .filter(d => d.reportingCategoryDescription !== 'Total' && d.suspensionRate !== null)
+                .reduce((acc, record) => {
+                    const existing = acc.get(record.reportingCategoryDescription);
+                    const yearValue = parseYearValue(record.academicYear);
 
-            const groups = latestData.map(d => d.reportingCategoryDescription);
-            const rates = latestData.map(d => d.suspensionRate * 100);
+                    if (!existing || (yearValue !== null && yearValue > existing.yearValue)) {
+                        acc.set(record.reportingCategoryDescription, {
+                            label: record.reportingCategoryDescription,
+                            rate: record.suspensionRate * 100,
+                            yearValue
+                        });
+                    }
+                    return acc;
+                }, new Map());
+
+            const groups = Array.from(latestData.values())
+                .sort((a, b) => (b.rate || 0) - (a.rate || 0));
+
+            const labels = groups.map(g => g.label);
+            const rates = groups.map(g => g.rate);
 
             const ctx = document.getElementById('groupChart').getContext('2d');
             if (charts.group) charts.group.destroy();
@@ -493,7 +520,7 @@
             charts.group = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: groups,
+                    labels: labels,
                     datasets: [{
                         label: 'Suspension Rate (%)',
                         data: rates,
@@ -526,16 +553,14 @@
             });
         }
 
-        function createTypeChart() {
-            const totalData = allData.filter(d => d.reportingCategoryDescription === 'Total');
-
+        function createTypeChart(data) {
             const types = {
-                'Violent (Injury)': totalData.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
-                'Violent (No Injury)': totalData.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
-                'Weapons': totalData.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
-                'Drugs': totalData.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
-                'Defiance Only': totalData.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
-                'Other': totalData.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
+                'Violent (Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
+                'Violent (No Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
+                'Weapons': data.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
+                'Drugs': data.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
+                'Defiance Only': data.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
+                'Other': data.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
             };
 
             const ctx = document.getElementById('typeChart').getContext('2d');
@@ -565,18 +590,17 @@
             });
         }
 
-        function createEnrollmentChart() {
-            const totalData = allData.filter(d => d.reportingCategoryDescription === 'Total');
-            const years = [...new Set(totalData.map(d => d.academicYear))].sort();
+        function createEnrollmentChart(data) {
+            const years = [...new Set(data.map(d => d.academicYear))].sort();
 
             const enrollment = years.map(year => {
-                const record = totalData.find(d => d.academicYear === year);
-                return record ? record.cumulativeEnrollment : 0;
+                const records = data.filter(d => d.academicYear === year);
+                return records.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
             });
 
             const suspensions = years.map(year => {
-                const record = totalData.find(d => d.academicYear === year);
-                return record ? record.totalSuspensions : 0;
+                const records = data.filter(d => d.academicYear === year);
+                return records.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
             });
 
             const ctx = document.getElementById('enrollmentChart').getContext('2d');
@@ -631,8 +655,8 @@
             });
         }
 
-        function createGenderChart() {
-            const genderData = allData.filter(d =>
+        function createGenderChart(data) {
+            const genderData = data.filter(d =>
                 ['Male', 'Female', 'Non-Binary Gender (Beginning 2019-20)'].includes(d.reportingCategoryDescription)
             );
 
@@ -687,8 +711,7 @@
             });
         }
 
-        function updateTable() {
-            const data = getFilteredData();
+        function updateTable(data) {
             const tableBody = document.getElementById('tableBody');
 
             const rows = data.map(d => {
@@ -711,9 +734,28 @@
             tableBody.innerHTML = rows;
         }
 
+        function updateGroupList(data) {
+            const container = document.getElementById('groupList');
+            if (!container) return;
+
+            const groups = [...new Set(data.map(d => d.reportingCategoryDescription))].sort();
+            if (!groups.length) {
+                container.textContent = 'No student groups available for the current filters.';
+                return;
+            }
+
+            container.innerHTML = `
+                <strong>Groups in view:</strong> ${groups.join(', ')}
+                <br><small>Group chart uses the latest available year for each listed group.</small>
+            `;
+        }
+
         function updateDashboard() {
-            updateMetrics();
-            updateTable();
+            const filteredData = getFilteredData();
+            updateMetrics(filteredData);
+            createCharts(filteredData);
+            updateTable(filteredData);
+            updateGroupList(filteredData);
         }
 
         // Initialize dashboard when page loads
