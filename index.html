@@ -238,9 +238,15 @@
             <!-- Metrics will be populated by JavaScript -->
         </div>
 
-        <!-- Filters -->
-        <div class="filters">
-            <div class="filter-group">
+        <!-- Data Availability Notice -->
+        <div class="alert alert-info" id="raceNotice" style="margin-bottom: 2rem;">
+            <!-- Race/ethnicity data availability will be described here -->
+        </div>
+
+        <!-- Chart 1: Suspension Rate Trends Over Time -->
+        <div class="chart-container full-width" style="margin-bottom: 2rem;">
+            <h3>Suspension Rate Trends Over Time</h3>
+            <div class="filter-group" style="margin-bottom: 1rem;">
                 <label for="yearFilter">Academic Year:</label>
                 <select id="yearFilter">
                     <option value="all">All Years</option>
@@ -251,82 +257,88 @@
                     <option value="all">All Groups</option>
                 </select>
             </div>
-            <div class="alert alert-info" id="raceNotice" style="margin-top: 1rem;">
-                <!-- Race/ethnicity data availability will be described here -->
-            </div>
-            <div class="alert alert-info" id="groupList" style="margin-top: 1rem;">
+            <div class="alert alert-info" id="groupList" style="margin-bottom: 1rem;">
                 <!-- Group list will be populated by JavaScript -->
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="trendChart"></canvas>
             </div>
         </div>
 
-        <!-- Charts -->
-        <div class="charts-grid">
-            <div class="chart-container">
-                <h3>Suspension Rate Trends Over Time</h3>
-                <div class="chart-wrapper">
-                    <canvas id="trendChart"></canvas>
-                </div>
+        <!-- Chart 2: Suspension Rates by Student Group -->
+        <div class="chart-container full-width" style="margin-bottom: 2rem;">
+            <h3>Suspension Rates by Student Group</h3>
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label for="groupChartYearFilter">Year:</label>
+                <select id="groupChartYearFilter">
+                    <option value="latest">Latest Year</option>
+                </select>
+
+                <label for="groupChartCategoryFilter">Category:</label>
+                <select id="groupChartCategoryFilter">
+                    <option value="non-race">Non-Race Categories</option>
+                    <option value="race">Race/Ethnicity Groups</option>
+                </select>
             </div>
-
-            <div class="chart-container">
-                <h3>Suspension Rates by Student Group</h3>
-                <div class="filter-group" style="margin-bottom: 1rem;">
-                    <label for="groupChartYearFilter">Year:</label>
-                    <select id="groupChartYearFilter">
-                        <option value="latest">Latest Year</option>
-                    </select>
-
-                    <label for="groupChartCategoryFilter">Category:</label>
-                    <select id="groupChartCategoryFilter">
-                        <option value="non-race">Non-Race Categories</option>
-                        <option value="race">Race/Ethnicity Groups</option>
-                    </select>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="groupChart"></canvas>
-                </div>
+            <div class="chart-wrapper">
+                <canvas id="groupChart"></canvas>
             </div>
+        </div>
 
-            <div class="chart-container full-width">
-                <h3>Suspension Types Breakdown - Year over Year Trends</h3>
-                <div class="filter-group" style="margin-bottom: 1rem;">
-                    <label for="typeChartYearFilter">Year Range:</label>
-                    <select id="typeChartYearFilter">
-                        <option value="all">All Years</option>
-                    </select>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="typeChart"></canvas>
-                </div>
+        <!-- Chart 3: Suspension Types Breakdown -->
+        <div class="chart-container full-width" style="margin-bottom: 2rem;">
+            <h3>Suspension Types Breakdown - Year over Year Trends</h3>
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label for="typeChartYearFilter">Year Range:</label>
+                <select id="typeChartYearFilter">
+                    <option value="all">All Years</option>
+                </select>
             </div>
-
-            <div class="chart-container">
-                <h3>Enrollment vs Suspensions</h3>
-                <div class="chart-wrapper">
-                    <canvas id="enrollmentChart"></canvas>
-                </div>
+            <div class="chart-wrapper">
+                <canvas id="typeChart"></canvas>
             </div>
+        </div>
 
-            <div class="chart-container">
-                <h3>Group Comparison Over Time</h3>
-                <div class="filter-group" style="margin-bottom: 1rem;">
-                    <label for="comparisonFilter">Compare:</label>
-                    <select id="comparisonFilter">
-                        <option value="gender">Gender Categories</option>
-                        <option value="race">Race/Ethnicity Groups</option>
-                        <option value="other">Other Categories</option>
-                        <option value="top5">Top 5 Highest Suspension Groups</option>
-                    </select>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="genderChart"></canvas>
-                </div>
+        <!-- Chart 4: Enrollment vs Suspensions (Static - No Filters) -->
+        <div class="chart-container full-width" style="margin-bottom: 2rem;">
+            <h3>Enrollment vs Suspensions</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">This chart shows all years and all student groups combined.</p>
+            <div class="chart-wrapper">
+                <canvas id="enrollmentChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 5: Group Comparison Over Time -->
+        <div class="chart-container full-width" style="margin-bottom: 2rem;">
+            <h3>Group Comparison Over Time</h3>
+            <div class="filter-group" style="margin-bottom: 1rem;">
+                <label for="comparisonFilter">Compare:</label>
+                <select id="comparisonFilter">
+                    <option value="gender">Gender Categories</option>
+                    <option value="race">Race/Ethnicity Groups</option>
+                    <option value="other">Other Categories</option>
+                    <option value="top5">Top 5 Highest Suspension Groups</option>
+                </select>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="genderChart"></canvas>
             </div>
         </div>
 
         <!-- Data Table -->
         <div class="chart-container full-width">
             <h3>Detailed Data Table</h3>
+            <div class="filter-group" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+                <div>
+                    <strong>Filter by Year:</strong>
+                    <div id="tableYearFilters" style="display: flex; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <!-- Year checkboxes will be populated by JavaScript -->
+                    </div>
+                </div>
+                <button id="downloadCsvBtn" style="padding: 0.75rem 1.5rem; background: #2C5F8D; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 600;">
+                    Download CSV
+                </button>
+            </div>
             <div style="overflow-x: auto;">
                 <table id="dataTable">
                     <thead>
@@ -552,7 +564,7 @@
             const filteredData = getFilteredData();
             updateMetrics(filteredData);
             createCharts(filteredData);
-            updateTable(filteredData);
+            updateTable(); // Table has its own year checkboxes now
             updateGroupList(filteredData);
         }
 
@@ -615,6 +627,35 @@
             if (comparisonFilter) {
                 comparisonFilter.addEventListener('change', updateDashboard);
             }
+
+            // Populate table year checkboxes
+            const tableYearFilters = document.getElementById('tableYearFilters');
+            if (tableYearFilters) {
+                years.forEach(year => {
+                    const label = document.createElement('label');
+                    label.style.display = 'flex';
+                    label.style.alignItems = 'center';
+                    label.style.gap = '0.25rem';
+                    label.style.cursor = 'pointer';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = year;
+                    checkbox.checked = true;
+                    checkbox.className = 'tableYearCheckbox';
+                    checkbox.addEventListener('change', updateTable);
+
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(year));
+                    tableYearFilters.appendChild(label);
+                });
+            }
+
+            // Add CSV download listener
+            const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+            if (downloadCsvBtn) {
+                downloadCsvBtn.addEventListener('click', downloadTableAsCSV);
+            }
         }
 
         function parseYearValue(yearLabel) {
@@ -636,11 +677,18 @@
         }
 
         function updateMetrics(data) {
-            const totalEnrollment = data.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
-            const totalSuspensions = data.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
-            const totalStudentsSuspended = data.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
+            // CRITICAL: Only use "Total" rows from base CSV to avoid double-counting
+            // Both CSVs have identical "Total" rows for each year, so using both doubles the counts
+            const totalRecords = data.filter(d =>
+                d.reportingCategoryDescription === 'Total' &&
+                (d.sourceFile === 'ev2_DorothyCamp_DataSummary.csv' || !d.sourceFile)
+            );
 
-            const rateRecords = data.filter(d => d.suspensionRate !== null);
+            const totalEnrollment = totalRecords.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
+            const totalSuspensions = totalRecords.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+            const totalStudentsSuspended = totalRecords.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
+
+            const rateRecords = totalRecords.filter(d => d.suspensionRate !== null);
             const avgSuspensionRate = rateRecords.length
                 ? rateRecords.reduce((sum, d) => sum + d.suspensionRate, 0) / rateRecords.length
                 : 0;
@@ -685,7 +733,7 @@
             createTrendChart(data);
             createGroupChart(data);
             createTypeChart(data);
-            createEnrollmentChart(data);
+            createEnrollmentChart(allData); // Always use ALL data (not filtered)
             createGenderChart(data);
         }
 
@@ -934,14 +982,23 @@
         function createEnrollmentChart(data) {
             const years = [...new Set(data.map(d => d.academicYear))].sort();
 
+            // CRITICAL: Only use "Total" rows from base CSV to avoid double-counting
             const enrollment = years.map(year => {
-                const records = data.filter(d => d.academicYear === year);
-                return records.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
+                const totalRecord = data.find(d =>
+                    d.academicYear === year &&
+                    d.reportingCategoryDescription === 'Total' &&
+                    (d.sourceFile === 'ev2_DorothyCamp_DataSummary.csv' || !d.sourceFile)
+                );
+                return totalRecord ? (totalRecord.cumulativeEnrollment || 0) : 0;
             });
 
             const suspensions = years.map(year => {
-                const records = data.filter(d => d.academicYear === year);
-                return records.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+                const totalRecord = data.find(d =>
+                    d.academicYear === year &&
+                    d.reportingCategoryDescription === 'Total' &&
+                    (d.sourceFile === 'ev2_DorothyCamp_DataSummary.csv' || !d.sourceFile)
+                );
+                return totalRecord ? (totalRecord.totalSuspensions || 0) : 0;
             });
 
             const ctx = document.getElementById('enrollmentChart').getContext('2d');
@@ -1138,10 +1195,38 @@
             });
         }
 
-        function updateTable(data) {
+        function updateTable() {
             const tableBody = document.getElementById('tableBody');
 
-            const rows = data.map(d => {
+            // Get selected years from checkboxes
+            const checkedYears = Array.from(document.querySelectorAll('.tableYearCheckbox:checked'))
+                .map(cb => cb.value);
+
+            // Filter data by selected years
+            let filteredData = allData.filter(d => checkedYears.includes(d.academicYear));
+
+            // CRITICAL: Remove duplicate "Total" rows (keep only from base CSV)
+            filteredData = filteredData.filter(d => {
+                if (d.reportingCategoryDescription === 'Total') {
+                    // Only include Total from base CSV
+                    return d.sourceFile === 'ev2_DorothyCamp_DataSummary.csv' || !d.sourceFile;
+                }
+                return true;
+            });
+
+            // Sort by year (descending) then by group name
+            filteredData.sort((a, b) => {
+                const yearCompare = b.academicYear.localeCompare(a.academicYear);
+                if (yearCompare !== 0) return yearCompare;
+
+                // Put "Total" first within each year
+                if (a.reportingCategoryDescription === 'Total') return -1;
+                if (b.reportingCategoryDescription === 'Total') return 1;
+
+                return a.reportingCategoryDescription.localeCompare(b.reportingCategoryDescription);
+            });
+
+            const rows = filteredData.map(d => {
                 const isTotal = d.reportingCategoryDescription === 'Total';
                 return `
                     <tr class="${isTotal ? 'highlight-total' : ''}">
@@ -1159,6 +1244,85 @@
             }).join('');
 
             tableBody.innerHTML = rows;
+        }
+
+        function downloadTableAsCSV() {
+            // Get selected years from checkboxes
+            const checkedYears = Array.from(document.querySelectorAll('.tableYearCheckbox:checked'))
+                .map(cb => cb.value);
+
+            // Filter data by selected years
+            let dataToExport = allData.filter(d => checkedYears.includes(d.academicYear));
+
+            // CRITICAL: Remove duplicate "Total" rows
+            dataToExport = dataToExport.filter(d => {
+                if (d.reportingCategoryDescription === 'Total') {
+                    return d.sourceFile === 'ev2_DorothyCamp_DataSummary.csv' || !d.sourceFile;
+                }
+                return true;
+            });
+
+            // Sort by year then by group
+            dataToExport.sort((a, b) => {
+                const yearCompare = b.academicYear.localeCompare(a.academicYear);
+                if (yearCompare !== 0) return yearCompare;
+                if (a.reportingCategoryDescription === 'Total') return -1;
+                if (b.reportingCategoryDescription === 'Total') return 1;
+                return a.reportingCategoryDescription.localeCompare(b.reportingCategoryDescription);
+            });
+
+            // Create CSV content
+            const headers = [
+                'Academic Year',
+                'Student Group',
+                'Enrollment',
+                'Total Suspensions',
+                'Students Suspended',
+                'Suspension Rate',
+                'Violent (Injury)',
+                'Violent (No Injury)',
+                'Defiance Only',
+                'Weapons',
+                'Drugs',
+                'Other',
+                'Source File'
+            ];
+
+            const csvRows = [headers.join(',')];
+
+            dataToExport.forEach(d => {
+                const row = [
+                    d.academicYear,
+                    `"${d.reportingCategoryDescription}"`,
+                    d.cumulativeEnrollment ?? 'N/A',
+                    d.totalSuspensions ?? 'N/A',
+                    d.uniqueStudentsSuspended ?? 'N/A',
+                    d.suspensionRate !== null ? (d.suspensionRate * 100).toFixed(1) + '%' : 'N/A',
+                    d.suspensionsViolentWithInjury ?? 'N/A',
+                    d.suspensionsViolentNoInjury ?? 'N/A',
+                    d.suspensionsDefianceOnly ?? 'N/A',
+                    d.suspensionsWeapons ?? 'N/A',
+                    d.suspensionsDrugs ?? 'N/A',
+                    d.suspensionsOther ?? 'N/A',
+                    d.sourceFile || 'Unknown'
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            const csvContent = csvRows.join('\n');
+
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `dorothy_camp_suspension_data_${checkedYears.join('_')}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function updateGroupList(data) {
@@ -1225,7 +1389,7 @@
             const filteredData = getFilteredData();
             updateMetrics(filteredData);
             createCharts(filteredData);
-            updateTable(filteredData);
+            // Table is not updated here - it has its own year checkboxes
             updateGroupList(filteredData);
         }
 
