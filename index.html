@@ -251,6 +251,9 @@
                     <option value="all">All Groups</option>
                 </select>
             </div>
+            <div class="alert alert-info" id="raceNotice" style="margin-top: 1rem;">
+                <!-- Race/ethnicity data availability will be described here -->
+            </div>
             <div class="alert alert-info" id="groupList" style="margin-top: 1rem;">
                 <!-- Group list will be populated by JavaScript -->
             </div>
@@ -323,22 +326,151 @@
     <script>
         let allData = [];
         let charts = {};
+        let dataSources = { base: false, race: false };
+        const expectedRaceGroups = [
+            'American Indian or Alaska Native',
+            'Asian',
+            'Black or African American',
+            'Filipino',
+            'Hispanic or Latino',
+            'Native Hawaiian or Pacific Islander',
+            'Two or More Races',
+            'White'
+        ];
+        let missingRaceGroups = [];
 
         // Load and process data
         async function loadData() {
             try {
-                const response = await fetch('dorothy_camp_clean_data.json');
-                allData = await response.json();
+                const [baseResult, raceResult] = await Promise.all([
+                    fetchCsvData('ev2_DorothyCamp_DataSummary.csv'),
+                    fetchCsvData('ev2_DorothyCamp_DataSummary-RACE.csv', true)
+                ]);
+
+                dataSources = {
+                    base: baseResult.loaded,
+                    race: raceResult.loaded
+                };
+
+                if (!dataSources.base) {
+                    throw new Error('Base summary sheet (ev2_DorothyCamp_DataSummary.csv) is required but could not be loaded.');
+                }
+
+                allData = [...baseResult.rows, ...raceResult.rows];
 
                 initializeDashboard();
             } catch (error) {
                 console.error('Error loading data:', error);
-                alert('Error loading data. Please ensure dorothy_camp_clean_data.json is in the same directory.');
+                alert('Error loading data. Please ensure both CSV files are in the same directory.');
             }
+        }
+
+        async function fetchCsvData(path, optional = false) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) {
+                    if (optional) {
+                        console.warn(`${path} not found; continuing without it.`);
+                        return { loaded: false, rows: [] };
+                    }
+                    throw new Error(`Failed to load ${path}`);
+                }
+
+                const text = await response.text();
+                return { loaded: true, rows: parseCsv(text) };
+            } catch (error) {
+                if (optional) {
+                    console.warn(`Optional source ${path} could not be loaded:`, error);
+                    return { loaded: false, rows: [] };
+                }
+                throw error;
+            }
+        }
+
+        function parseCsv(text) {
+            const lines = text.split(/\r?\n/).filter(Boolean);
+            if (!lines.length) return [];
+
+            const headers = lines[0].split(',');
+            return lines.slice(1).map(line => {
+                const cells = splitCsvLine(line, headers.length);
+                const row = headers.reduce((acc, header, idx) => {
+                    acc[header] = cells[idx] ?? '';
+                    return acc;
+                }, {});
+
+                return {
+                    academicYear: row['AcademicYear'],
+                    schoolName: row['SchoolName'],
+                    reportingCategory: row['ReportingCategory'],
+                    reportingCategoryDescription: cleanReportingCategory(row['ReportingCategory_Description']),
+                    cumulativeEnrollment: cleanValue(row['CumulativeEnrollment']),
+                    totalSuspensions: cleanValue(row['Total Suspensions']),
+                    uniqueStudentsSuspended: cleanValue(row['Unduplicated Count of Students Suspended (Total)']),
+                    uniqueStudentsSuspendedDefianceOnly: cleanValue(row['Unduplicated Count of Students Suspended (Defiance-Only)']),
+                    suspensionRate: cleanValue(row['Suspension Rate (Total)']),
+                    suspensionsViolentWithInjury: cleanValue(row['Suspension Count Violent Incident (Injury)']),
+                    suspensionsViolentNoInjury: cleanValue(row['Suspension Count Violent Incident (No Injury)']),
+                    suspensionsWeapons: cleanValue(row['Suspension Count Weapons Possession']),
+                    suspensionsDrugs: cleanValue(row['Suspension Count Illicit Drug-Related']),
+                    suspensionsDefianceOnly: cleanValue(row['Suspension Count Defiance-Only']),
+                    suspensionsOther: cleanValue(row['Suspension Count Other Reasons']),
+                    schoolType: row['School Type']
+                };
+            });
+        }
+
+        function splitCsvLine(line, columnCount) {
+            const cells = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++; // Skip escaped quote
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    cells.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+
+            cells.push(current);
+
+            while (cells.length < columnCount) {
+                cells.push('');
+            }
+
+            return cells;
+        }
+
+        function cleanValue(value) {
+            if (value === undefined || value === null) return null;
+            const trimmed = value.trim();
+            if (trimmed === '' || trimmed === '*') return null;
+            const num = Number(trimmed);
+            return Number.isNaN(num) ? trimmed : num;
+        }
+
+        function cleanReportingCategory(description) {
+            if (!description) return description;
+            if (description.includes('�') || description.includes('Ð')) {
+                return description.replace('2019�20', '2019-20').replace('2019Ð20', '2019-20');
+            }
+            return description;
         }
 
         function initializeDashboard() {
             populateFilters();
+            computeRaceAvailability();
             const filteredData = getFilteredData();
             updateMetrics(filteredData);
             createCharts(filteredData);
@@ -748,6 +880,50 @@
                 <strong>Groups in view:</strong> ${groups.join(', ')}
                 <br><small>Group chart uses the latest available year for each listed group.</small>
             `;
+        }
+
+        function computeRaceAvailability() {
+            const groups = new Set(allData.map(d => d.reportingCategoryDescription));
+            missingRaceGroups = expectedRaceGroups.filter(group => !groups.has(group));
+            updateRaceNotice();
+        }
+
+        function updateRaceNotice() {
+            const notice = document.getElementById('raceNotice');
+            if (!notice) return;
+
+            const raceSourceMissing = !dataSources.race;
+
+            if (raceSourceMissing) {
+                notice.innerHTML = `
+                    <strong>Race/Ethnicity data file missing:</strong> The race data sheet (ev2_DorothyCamp_DataSummary-RACE.csv)
+                    could not be loaded. Please place it alongside the dashboard files so all race/ethnicity groups appear in the
+                    filters and charts.
+                `;
+                return;
+            }
+
+            if (missingRaceGroups.length === expectedRaceGroups.length) {
+                notice.innerHTML = `
+                    <strong>Race/Ethnicity data unavailable:</strong> The combined data does not contain any race/ethnicity
+                    categories (expected: ${expectedRaceGroups.join(', ')}). These groups cannot be displayed until they are
+                    included in the source sheets.
+                `;
+                return;
+            }
+
+            if (missingRaceGroups.length) {
+                notice.innerHTML = `
+                    <strong>Partial race/ethnicity coverage:</strong> Missing categories from the source data:
+                    ${missingRaceGroups.join(', ')}. All available categories from both sheets are included in the filters and
+                    charts.
+                `;
+            } else {
+                notice.innerHTML = `
+                    <strong>Race/Ethnicity categories available:</strong> All expected race/ethnicity groups appear in the
+                    combined data and respond to the filters above.
+                `;
+            }
         }
 
         function updateDashboard() {
