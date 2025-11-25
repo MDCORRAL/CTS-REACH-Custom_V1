@@ -284,7 +284,7 @@
         <!-- Chart 2: Suspension Rates by Student Group -->
         <div class="chart-container full-width" style="margin-bottom: 2rem;">
             <h3>Suspension Rates by Student Group</h3>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This horizontal bar chart compares suspension rates across different student groups for a selected year. Groups are sorted by suspension rate (highest to lowest). You can filter by category type (Race vs Non-Race). Filters below affect ONLY this chart.</p>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This horizontal bar chart compares suspension rates across different student groups for a selected year. Groups are sorted by suspension rate (highest to lowest) based on total suspension counts overall. You can filter by category type (Race vs Non-Race). Filters below affect ONLY this chart.</p>
             <div class="filter-group" style="margin-bottom: 1rem;">
                 <label for="groupChartYearFilter">Year:</label>
                 <select id="groupChartYearFilter">
@@ -320,7 +320,7 @@
         <!-- Chart 4: Enrollment vs Suspensions (Static - No Filters) -->
         <div class="chart-container full-width" style="margin-bottom: 2rem;">
             <h3>Enrollment vs Suspensions</h3>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This dual-axis bar chart shows total enrollment (left axis) and total suspensions (right axis) for each academic year. Data is from official "Total" rows only (avoiding double-counting). This chart is static and shows all available years. No filters affect this chart.</p>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This dual-axis bar chart shows total enrollment (left axis) and total suspensions (right axis) for each academic year. No filters affect this chart.</p>
             <div class="chart-wrapper">
                 <canvas id="enrollmentChart"></canvas>
             </div>
@@ -347,7 +347,7 @@
         <!-- Data Table -->
         <div class="chart-container full-width">
             <h3>Detailed Data Table</h3>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This table displays all suspension data for selected years. Each row represents one student group for one academic year. "Total" rows (highlighted in yellow) represent school-wide totals. All suspension type columns (Violent with/without Injury, Weapons, Drugs, Defiance Only, Other) are included. Duplicate "Total" rows from the race data file are excluded to avoid double-counting. Use checkboxes to select years, then click "Download CSV" to export.</p>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;"><strong>Methodology:</strong> This table displays all suspension data for selected years. Each row represents one student group for one academic year. "Total" rows (highlighted in yellow) represent school-wide totals. All suspension type columns (Violent with/without Injury, Weapons, Drugs, Defiance Only, Other) are included. Use checkboxes to select years, then click "Download CSV" to export.</p>
             <div class="filter-group" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
                 <div>
                     <strong>Filter by Year:</strong>
@@ -1456,7 +1456,6 @@
                 'Weapons',
                 'Drugs',
                 'Other',
-                'Source File'
             ];
 
             const csvRows = [headers.join(',')];
