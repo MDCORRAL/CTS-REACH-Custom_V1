@@ -483,7 +483,7 @@
                 }
 
                 const text = await response.text();
-                return { loaded: true, rows: parseCsv(text) };
+                return { loaded: true, rows: parseCsv(text, path) };
             } catch (error) {
                 if (optional) {
                     console.warn(`Optional source ${path} could not be loaded:`, error);
@@ -503,7 +503,7 @@
                 totalSuspensions: cleanValue(row.totalSuspensions ?? row['Total Suspensions']),
                 uniqueStudentsSuspended: cleanValue(row.uniqueStudentsSuspended ?? row['Unduplicated Count of Students Suspended (Total)']),
                 uniqueStudentsSuspendedDefianceOnly: cleanValue(row.uniqueStudentsSuspendedDefianceOnly ?? row['Unduplicated Count of Students Suspended (Defiance-Only)']),
-                suspensionRate: cleanValue(row.suspensionRate ?? row['Suspension Rate (Total)']),
+                suspensionRate: cleanValue(row.suspensionRate ?? row['Suspension Rate (Total)'] ?? row['Suspension Rate [%] (Total)']),
                 suspensionsViolentWithInjury: cleanValue(row.suspensionsViolentWithInjury ?? row['Suspension Count Violent Incident (Injury)']),
                 suspensionsViolentNoInjury: cleanValue(row.suspensionsViolentNoInjury ?? row['Suspension Count Violent Incident (No Injury)']),
                 suspensionsWeapons: cleanValue(row.suspensionsWeapons ?? row['Suspension Count Weapons Possession']),
@@ -515,11 +515,11 @@
             };
         }
 
-        function parseCsv(text) {
+        function parseCsv(text, sourceFile) {
             const lines = text.split(/\r?\n/).filter(Boolean);
             if (!lines.length) return [];
 
-            const headers = lines[0].split(',');
+            const headers = splitCsvLine(lines[0]);
             return lines.slice(1).map(line => {
                 const cells = splitCsvLine(line, headers.length);
                 const row = headers.reduce((acc, header, idx) => {
@@ -536,14 +536,15 @@
                     totalSuspensions: cleanValue(row['Total Suspensions']),
                     uniqueStudentsSuspended: cleanValue(row['Unduplicated Count of Students Suspended (Total)']),
                     uniqueStudentsSuspendedDefianceOnly: cleanValue(row['Unduplicated Count of Students Suspended (Defiance-Only)']),
-                    suspensionRate: cleanValue(row['Suspension Rate (Total)']),
+                    suspensionRate: cleanValue(row['Suspension Rate (Total)'] ?? row['Suspension Rate [%] (Total)']),
                     suspensionsViolentWithInjury: cleanValue(row['Suspension Count Violent Incident (Injury)']),
                     suspensionsViolentNoInjury: cleanValue(row['Suspension Count Violent Incident (No Injury)']),
                     suspensionsWeapons: cleanValue(row['Suspension Count Weapons Possession']),
                     suspensionsDrugs: cleanValue(row['Suspension Count Illicit Drug-Related']),
                     suspensionsDefianceOnly: cleanValue(row['Suspension Count Defiance-Only']),
                     suspensionsOther: cleanValue(row['Suspension Count Other Reasons']),
-                    schoolType: row['School Type']
+                    schoolType: row['School Type'],
+                    sourceFile
                 };
             });
         }
@@ -1452,9 +1453,9 @@
                 'Suspension Rate',
                 'Violent (Injury)',
                 'Violent (No Injury)',
-                'Defiance Only',
                 'Weapons',
                 'Drugs',
+                'Defiance Only',
                 'Other',
             ];
 
@@ -1470,11 +1471,10 @@
                     d.suspensionRate !== null ? (d.suspensionRate * 100).toFixed(1) + '%' : 'N/A',
                     d.suspensionsViolentWithInjury ?? 'N/A',
                     d.suspensionsViolentNoInjury ?? 'N/A',
-                    d.suspensionsDefianceOnly ?? 'N/A',
                     d.suspensionsWeapons ?? 'N/A',
                     d.suspensionsDrugs ?? 'N/A',
-                    d.suspensionsOther ?? 'N/A',
-                    d.sourceFile || 'Unknown'
+                    d.suspensionsDefianceOnly ?? 'N/A',
+                    d.suspensionsOther ?? 'N/A'
                 ];
                 csvRows.push(row.join(','));
             });
