@@ -814,7 +814,13 @@ charts.trend = new Chart(ctx, { ... });
 - Display as "N/A" in UI (never "0")
 - Never attempt to recover or estimate suppressed values
 
-#### 7. **Responsive Design Required**
+#### 7. **Percent Label Consistency**
+
+- All percentage data labels on charts must use the shared helpers in `index.html`: `percentLabelFormatter` and `getPercentDatalabelsConfig()`.
+- Format percentages as **one decimal place with a trailing percent sign** (e.g., `12.3%`) and show `N/A` for missing or invalid values.
+- Keep alignment/anchor consistent (`align: 'top'`, `anchor: 'end'`) unless a chart explicitly requires a different override.
+
+#### 8. **Responsive Design Required**
 
 - All changes must work on mobile, tablet, and desktop
 - Test at minimum: 320px, 768px, 1024px, 1440px widths
