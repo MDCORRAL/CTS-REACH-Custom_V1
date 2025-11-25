@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dorothy Camp Kirby School - Suspension Data Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -401,12 +402,23 @@
         let missingRaceGroups = [];
 
         // Ensure chart points are always visible and easy to hover
+        Chart.register(ChartDataLabels);
         Chart.defaults.elements.point.radius = 6;
         Chart.defaults.elements.point.hoverRadius = 9;
         Chart.defaults.elements.point.hitRadius = 12;
         Chart.defaults.elements.point.backgroundColor = '#2C5F8D';
         Chart.defaults.elements.point.borderColor = '#ffffff';
         Chart.defaults.elements.point.borderWidth = 2;
+        Chart.defaults.set('plugins.datalabels', {
+            display: false,
+            color: '#1f2d3d',
+            borderRadius: 4,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            padding: 4,
+            font: {
+                weight: '600'
+            }
+        });
 
         // Load and process data
         async function loadData() {
@@ -861,6 +873,12 @@
                         legend: {
                             display: true,
                             position: 'top'
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'top',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
@@ -947,6 +965,12 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'end',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
@@ -1070,6 +1094,12 @@
                                     return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
                                 }
                             }
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'top',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
@@ -1312,6 +1342,12 @@
                         legend: {
                             display: true,
                             position: 'top'
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'top',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
