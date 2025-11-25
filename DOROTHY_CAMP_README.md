@@ -7,12 +7,14 @@ This interactive HTML dashboard visualizes suspension data from Dorothy Camp Kir
 
 ### 1. Raw Data
 - **ev2_DorothyCamp_DataSummary.csv** - Original raw data file containing suspension records
+- **ev2_DorothyCamp_DataSummary-RACE.csv** - Companion sheet with race/ethnicity breakdowns
 
 ### 2. Data Processing
 - **clean_dorothy_camp_data.py** - Python script that cleans and transforms the raw CSV data
   - Handles missing values (marked as "*" in original data)
   - Fixes encoding issues
   - Converts data types appropriately
+  - Merges the base summary sheet with the race/ethnicity sheet
   - Outputs clean JSON format
 
 ### 3. Clean Data
