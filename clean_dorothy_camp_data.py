@@ -50,6 +50,9 @@ def main():
             continue
 
         for row in load_csv_rows(path):
+            # Handle different column names between base and race CSVs
+            suspension_rate_key = 'Suspension Rate [%] (Total)' if 'Suspension Rate [%] (Total)' in row else 'Suspension Rate (Total)'
+
             cleaned_row = {
                 'academicYear': row['AcademicYear'],
                 'schoolName': row['SchoolName'],
@@ -59,7 +62,7 @@ def main():
                 'totalSuspensions': clean_value(row['Total Suspensions']),
                 'uniqueStudentsSuspended': clean_value(row['Unduplicated Count of Students Suspended (Total)']),
                 'uniqueStudentsSuspendedDefianceOnly': clean_value(row['Unduplicated Count of Students Suspended (Defiance-Only)']),
-                'suspensionRate': clean_value(row['Suspension Rate (Total)']),
+                'suspensionRate': clean_value(row[suspension_rate_key]),
                 'suspensionsViolentWithInjury': clean_value(row['Suspension Count Violent Incident (Injury)']),
                 'suspensionsViolentNoInjury': clean_value(row['Suspension Count Violent Incident (No Injury)']),
                 'suspensionsWeapons': clean_value(row['Suspension Count Weapons Possession']),
