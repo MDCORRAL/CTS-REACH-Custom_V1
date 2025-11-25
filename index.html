@@ -269,7 +269,19 @@
             </div>
 
             <div class="chart-container">
-                <h3>Suspension Rates by Student Group (Latest Year)</h3>
+                <h3>Suspension Rates by Student Group</h3>
+                <div class="filter-group" style="margin-bottom: 1rem;">
+                    <label for="groupChartYearFilter">Year:</label>
+                    <select id="groupChartYearFilter">
+                        <option value="latest">Latest Year</option>
+                    </select>
+
+                    <label for="groupChartCategoryFilter">Category:</label>
+                    <select id="groupChartCategoryFilter">
+                        <option value="non-race">Non-Race Categories</option>
+                        <option value="race">Race/Ethnicity Groups</option>
+                    </select>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="groupChart"></canvas>
                 </div>
@@ -562,6 +574,24 @@
             yearFilter.addEventListener('change', updateDashboard);
             groupFilter.addEventListener('change', updateDashboard);
 
+            // Populate group chart year filter
+            const groupChartYearFilter = document.getElementById('groupChartYearFilter');
+            if (groupChartYearFilter) {
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    groupChartYearFilter.appendChild(option);
+                });
+                groupChartYearFilter.addEventListener('change', updateDashboard);
+            }
+
+            // Add listener for group chart category filter
+            const groupChartCategoryFilter = document.getElementById('groupChartCategoryFilter');
+            if (groupChartCategoryFilter) {
+                groupChartCategoryFilter.addEventListener('change', updateDashboard);
+            }
+
             // Add listener for comparison filter
             const comparisonFilter = document.getElementById('comparisonFilter');
             if (comparisonFilter) {
@@ -690,23 +720,42 @@
         }
 
         function createGroupChart(data) {
-            const latestData = data
-                .filter(d => d.reportingCategoryDescription !== 'Total' && d.suspensionRate !== null)
-                .reduce((acc, record) => {
-                    const existing = acc.get(record.reportingCategoryDescription);
-                    const yearValue = parseYearValue(record.academicYear);
+            // Get filter values
+            const yearFilterValue = document.getElementById('groupChartYearFilter')?.value || 'latest';
+            const categoryFilterValue = document.getElementById('groupChartCategoryFilter')?.value || 'non-race';
 
-                    if (!existing || (yearValue !== null && yearValue > existing.yearValue)) {
-                        acc.set(record.reportingCategoryDescription, {
-                            label: record.reportingCategoryDescription,
-                            rate: record.suspensionRate * 100,
-                            yearValue
-                        });
-                    }
-                    return acc;
-                }, new Map());
+            // Determine target year
+            let targetYear;
+            if (yearFilterValue === 'latest') {
+                const years = [...new Set(data.map(d => d.academicYear))]
+                    .map(year => ({ label: year, value: parseYearValue(year) }))
+                    .filter(y => y.value !== null)
+                    .sort((a, b) => b.value - a.value);
+                targetYear = years[0]?.label;
+            } else {
+                targetYear = yearFilterValue;
+            }
 
-            const groups = Array.from(latestData.values())
+            // Filter data by selected year and category type
+            const filteredData = data.filter(d => {
+                if (d.reportingCategoryDescription === 'Total') return false;
+                if (d.suspensionRate === null) return false;
+                if (d.academicYear !== targetYear) return false;
+
+                const category = categorizeGroup(d.reportingCategoryDescription);
+                if (categoryFilterValue === 'race') {
+                    return category === 'race';
+                } else {
+                    return category !== 'race' && category !== 'total';
+                }
+            });
+
+            // Sort by suspension rate
+            const groups = filteredData
+                .map(d => ({
+                    label: d.reportingCategoryDescription,
+                    rate: d.suspensionRate * 100
+                }))
                 .sort((a, b) => (b.rate || 0) - (a.rate || 0));
 
             const labels = groups.map(g => g.label);
@@ -715,6 +764,15 @@
             const ctx = document.getElementById('groupChart').getContext('2d');
             if (charts.group) charts.group.destroy();
 
+            // Generate colors dynamically based on number of groups
+            const colorPalette = [
+                '#2C5F8D', '#4A90C2', '#6BB6D6', '#8FD4E8',
+                '#B3E5F5', '#FFB74D', '#FF8A65', '#A1887F',
+                '#90A4AE', '#4CAF50', '#FFC107', '#E91E63',
+                '#00BCD4', '#FF5722', '#3F51B5', '#8BC34A'
+            ];
+            const colors = labels.map((_, idx) => colorPalette[idx % colorPalette.length]);
+
             charts.group = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -722,11 +780,7 @@
                     datasets: [{
                         label: 'Suspension Rate (%)',
                         data: rates,
-                        backgroundColor: [
-                            '#2C5F8D', '#4A90C2', '#6BB6D6', '#8FD4E8',
-                            '#B3E5F5', '#FFB74D', '#FF8A65', '#A1887F',
-                            '#90A4AE'
-                        ]
+                        backgroundColor: colors
                     }]
                 },
                 options: {
