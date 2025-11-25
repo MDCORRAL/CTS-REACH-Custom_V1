@@ -390,11 +390,14 @@
         }
 
         function updateMetrics(data) {
-            const totalEnrollment = data.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
-            const totalSuspensions = data.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
-            const totalStudentsSuspended = data.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
+            const aggregateData = data.filter(d => d.reportingCategoryDescription === 'Total');
+            const metricSource = aggregateData.length ? aggregateData : data;
 
-            const rateRecords = data.filter(d => d.suspensionRate !== null);
+            const totalEnrollment = metricSource.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
+            const totalSuspensions = metricSource.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+            const totalStudentsSuspended = metricSource.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
+
+            const rateRecords = metricSource.filter(d => d.suspensionRate !== null);
             const avgSuspensionRate = rateRecords.length
                 ? rateRecords.reduce((sum, d) => sum + d.suspensionRate, 0) / rateRecords.length
                 : 0;
@@ -554,13 +557,16 @@
         }
 
         function createTypeChart(data) {
+            const aggregateData = data.filter(d => d.reportingCategoryDescription === 'Total');
+            const typeSource = aggregateData.length ? aggregateData : data.filter(d => d.reportingCategoryDescription !== 'Total');
+
             const types = {
-                'Violent (Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
-                'Violent (No Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
-                'Weapons': data.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
-                'Drugs': data.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
-                'Defiance Only': data.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
-                'Other': data.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
+                'Violent (Injury)': typeSource.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
+                'Violent (No Injury)': typeSource.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
+                'Weapons': typeSource.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
+                'Drugs': typeSource.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
+                'Defiance Only': typeSource.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
+                'Other': typeSource.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
             };
 
             const ctx = document.getElementById('typeChart').getContext('2d');
@@ -595,12 +601,20 @@
 
             const enrollment = years.map(year => {
                 const records = data.filter(d => d.academicYear === year);
-                return records.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
+                const totalRecord = records.find(d => d.reportingCategoryDescription === 'Total');
+                if (totalRecord) return totalRecord.cumulativeEnrollment || 0;
+                return records
+                    .filter(d => d.reportingCategoryDescription !== 'Total')
+                    .reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
             });
 
             const suspensions = years.map(year => {
                 const records = data.filter(d => d.academicYear === year);
-                return records.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+                const totalRecord = records.find(d => d.reportingCategoryDescription === 'Total');
+                if (totalRecord) return totalRecord.totalSuspensions || 0;
+                return records
+                    .filter(d => d.reportingCategoryDescription !== 'Total')
+                    .reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
             });
 
             const ctx = document.getElementById('enrollmentChart').getContext('2d');
