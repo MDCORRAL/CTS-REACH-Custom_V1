@@ -1452,9 +1452,9 @@
                 'Suspension Rate',
                 'Violent (Injury)',
                 'Violent (No Injury)',
-                'Defiance Only',
                 'Weapons',
                 'Drugs',
+                'Defiance Only',
                 'Other',
             ];
 
@@ -1470,11 +1470,10 @@
                     d.suspensionRate !== null ? (d.suspensionRate * 100).toFixed(1) + '%' : 'N/A',
                     d.suspensionsViolentWithInjury ?? 'N/A',
                     d.suspensionsViolentNoInjury ?? 'N/A',
-                    d.suspensionsDefianceOnly ?? 'N/A',
                     d.suspensionsWeapons ?? 'N/A',
                     d.suspensionsDrugs ?? 'N/A',
-                    d.suspensionsOther ?? 'N/A',
-                    d.sourceFile || 'Unknown'
+                    d.suspensionsDefianceOnly ?? 'N/A',
+                    d.suspensionsOther ?? 'N/A'
                 ];
                 csvRows.push(row.join(','));
             });
