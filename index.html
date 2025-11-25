@@ -378,10 +378,23 @@
             });
         }
 
+        function getAggregateData(data) {
+            const groupFilter = document.getElementById('groupFilter').value;
+
+            if (groupFilter === 'all') {
+                const totalRecords = data.filter(d => d.reportingCategoryDescription === 'Total');
+                return totalRecords.length ? totalRecords : data;
+            }
+
+            return data;
+        }
+
         function updateMetrics(data) {
-            const totalEnrollment = data.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
-            const totalSuspensions = data.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
-            const totalStudentsSuspended = data.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
+            const aggregateData = getAggregateData(data);
+
+            const totalEnrollment = aggregateData.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
+            const totalSuspensions = aggregateData.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
+            const totalStudentsSuspended = aggregateData.reduce((sum, d) => sum + (d.uniqueStudentsSuspended || 0), 0);
 
             const rateRecords = data.filter(d => d.suspensionRate !== null);
             const avgSuspensionRate = rateRecords.length
@@ -529,13 +542,15 @@
         }
 
         function createTypeChart(data) {
+            const aggregateData = getAggregateData(data);
+
             const types = {
-                'Violent (Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
-                'Violent (No Injury)': data.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
-                'Weapons': data.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
-                'Drugs': data.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
-                'Defiance Only': data.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
-                'Other': data.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
+                'Violent (Injury)': aggregateData.reduce((sum, d) => sum + (d.suspensionsViolentWithInjury || 0), 0),
+                'Violent (No Injury)': aggregateData.reduce((sum, d) => sum + (d.suspensionsViolentNoInjury || 0), 0),
+                'Weapons': aggregateData.reduce((sum, d) => sum + (d.suspensionsWeapons || 0), 0),
+                'Drugs': aggregateData.reduce((sum, d) => sum + (d.suspensionsDrugs || 0), 0),
+                'Defiance Only': aggregateData.reduce((sum, d) => sum + (d.suspensionsDefianceOnly || 0), 0),
+                'Other': aggregateData.reduce((sum, d) => sum + (d.suspensionsOther || 0), 0)
             };
 
             const ctx = document.getElementById('typeChart').getContext('2d');
@@ -568,13 +583,15 @@
         function createEnrollmentChart(data) {
             const years = [...new Set(data.map(d => d.academicYear))].sort();
 
+            const aggregateData = getAggregateData(data);
+
             const enrollment = years.map(year => {
-                const records = data.filter(d => d.academicYear === year);
+                const records = aggregateData.filter(d => d.academicYear === year);
                 return records.reduce((sum, d) => sum + (d.cumulativeEnrollment || 0), 0);
             });
 
             const suspensions = years.map(year => {
-                const records = data.filter(d => d.academicYear === year);
+                const records = aggregateData.filter(d => d.academicYear === year);
                 return records.reduce((sum, d) => sum + (d.totalSuspensions || 0), 0);
             });
 
