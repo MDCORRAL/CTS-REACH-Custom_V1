@@ -5,7 +5,7 @@ Clean Dorothy Camp Kirby School suspension data for dashboard visualization
 
 import csv
 import json
-import sys
+from pathlib import Path
 
 def clean_value(value):
     """Convert value to appropriate type, handling '*' as null"""
@@ -28,17 +28,28 @@ def clean_reporting_category(description):
         description = description.replace('2019�20', '2019-20').replace('2019Ð20', '2019-20')
     return description
 
+def load_csv_rows(path):
+    with open(path, 'r', encoding='latin-1') as f:
+        reader = csv.DictReader(f)
+        return list(reader)
+
+
 def main():
-    input_file = 'ev2_DorothyCamp_DataSummary.csv'
+    input_files = [
+        Path('ev2_DorothyCamp_DataSummary.csv'),
+        Path('ev2_DorothyCamp_DataSummary-RACE.csv')
+    ]
     output_file = 'dorothy_camp_clean_data.json'
 
     cleaned_data = []
+    missing_sources = []
 
-    with open(input_file, 'r', encoding='latin-1') as f:
-        reader = csv.DictReader(f)
+    for path in input_files:
+        if not path.exists():
+            missing_sources.append(path.name)
+            continue
 
-        for row in reader:
-            # Create cleaned row
+        for row in load_csv_rows(path):
             cleaned_row = {
                 'academicYear': row['AcademicYear'],
                 'schoolName': row['SchoolName'],
@@ -55,10 +66,14 @@ def main():
                 'suspensionsDrugs': clean_value(row['Suspension Count Illicit Drug-Related']),
                 'suspensionsDefianceOnly': clean_value(row['Suspension Count Defiance-Only']),
                 'suspensionsOther': clean_value(row['Suspension Count Other Reasons']),
-                'schoolType': row['School Type']
+                'schoolType': row['School Type'],
+                'sourceFile': path.name
             }
 
             cleaned_data.append(cleaned_row)
+
+    if missing_sources:
+        print("⚠️  Missing source files:", ', '.join(missing_sources))
 
     # Write cleaned data to JSON
     with open(output_file, 'w', encoding='utf-8') as f:
@@ -70,11 +85,13 @@ def main():
     # Print summary statistics
     years = set(row['academicYear'] for row in cleaned_data)
     categories = set(row['reportingCategoryDescription'] for row in cleaned_data if row['reportingCategoryDescription'])
+    sources = set(row['sourceFile'] for row in cleaned_data)
 
     print(f"\nData Summary:")
     print(f"  Academic Years: {sorted(years)}")
     print(f"  Student Groups: {len(categories)}")
     print(f"  Categories: {sorted(categories)}")
+    print(f"  Sources merged: {sorted(sources)}")
 
 if __name__ == '__main__':
     main()
