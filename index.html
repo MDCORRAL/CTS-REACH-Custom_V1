@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dorothy Camp Kirby School - Suspension Data Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -399,6 +400,25 @@
             'White'
         ];
         let missingRaceGroups = [];
+
+        // Ensure chart points are always visible and easy to hover
+        Chart.register(ChartDataLabels);
+        Chart.defaults.elements.point.radius = 6;
+        Chart.defaults.elements.point.hoverRadius = 9;
+        Chart.defaults.elements.point.hitRadius = 12;
+        Chart.defaults.elements.point.backgroundColor = '#2C5F8D';
+        Chart.defaults.elements.point.borderColor = '#ffffff';
+        Chart.defaults.elements.point.borderWidth = 2;
+        Chart.defaults.set('plugins.datalabels', {
+            display: false,
+            color: '#1f2d3d',
+            borderRadius: 4,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            padding: 4,
+            font: {
+                weight: '600'
+            }
+        });
 
         // Load and process data
         async function loadData() {
@@ -818,8 +838,12 @@
             if (charts.trend) charts.trend.destroy();
 
             // Larger points for better visibility, especially with fewer data points
-            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
-            const pointHoverRadius = pointRadius + 2;
+            const pointRadius = Math.max(
+                Chart.defaults.elements.point.radius,
+                years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4)
+            );
+            const pointHoverRadius = Math.max(Chart.defaults.elements.point.hoverRadius, pointRadius + 2);
+            const pointHitRadius = Math.max(Chart.defaults.elements.point.hitRadius, pointHoverRadius + 2);
 
             charts.trend = new Chart(ctx, {
                 type: 'line',
@@ -835,6 +859,8 @@
                         tension: 0.4,
                         pointRadius: pointRadius,
                         pointHoverRadius: pointHoverRadius,
+                        pointHitRadius: pointHitRadius,
+                        pointStyle: 'circle',
                         pointBackgroundColor: '#2C5F8D',
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2
@@ -847,6 +873,12 @@
                         legend: {
                             display: true,
                             position: 'top'
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'top',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
@@ -933,6 +965,12 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'end',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
@@ -979,8 +1017,12 @@
 
             // Build datasets for each suspension type
             // Larger points for better visibility, especially with fewer years
-            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
-            const pointHoverRadius = pointRadius + 2;
+            const pointRadius = Math.max(
+                Chart.defaults.elements.point.radius,
+                years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4)
+            );
+            const pointHoverRadius = Math.max(Chart.defaults.elements.point.hoverRadius, pointRadius + 2);
+            const pointHitRadius = Math.max(Chart.defaults.elements.point.hitRadius, pointHoverRadius + 2);
 
             const lineColors = ['#003B5C', '#005587', '#2774AE', '#8BB8E8', '#FFB81C', '#FFC72C'];
             const fillColors = [
@@ -1021,6 +1063,8 @@
                     tension: 0.4,
                     pointRadius: pointRadius,
                     pointHoverRadius: pointHoverRadius,
+                    pointHitRadius: pointHitRadius,
+                    pointStyle: 'circle',
                     pointBackgroundColor: borderColor,
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1
@@ -1050,6 +1094,12 @@
                                     return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
                                 }
                             }
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'top',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
@@ -1240,8 +1290,12 @@
             ];
 
             // Larger points for better visibility
-            const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
-            const pointHoverRadius = pointRadius + 2;
+            const pointRadius = Math.max(
+                Chart.defaults.elements.point.radius,
+                years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4)
+            );
+            const pointHoverRadius = Math.max(Chart.defaults.elements.point.hoverRadius, pointRadius + 2);
+            const pointHitRadius = Math.max(Chart.defaults.elements.point.hitRadius, pointHoverRadius + 2);
 
             const datasets = groupsToCompare.map((group, idx) => {
                 const data = years.map(year => {
@@ -1264,6 +1318,8 @@
                     fill: false,
                     pointRadius: pointRadius,
                     pointHoverRadius: pointHoverRadius,
+                    pointHitRadius: pointHitRadius,
+                    pointStyle: 'circle',
                     pointBackgroundColor: color,
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1
@@ -1286,6 +1342,12 @@
                         legend: {
                             display: true,
                             position: 'top'
+                        },
+                        datalabels: {
+                            display: ctx => ctx.raw !== null && ctx.raw !== undefined,
+                            align: 'top',
+                            anchor: 'end',
+                            formatter: value => `${value.toFixed(1)}%`
                         }
                     },
                     scales: {
