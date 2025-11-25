@@ -251,6 +251,9 @@
                     <option value="all">All Groups</option>
                 </select>
             </div>
+            <div class="alert alert-info" id="groupList" style="margin-top: 1rem;">
+                <!-- Group list will be populated by JavaScript -->
+            </div>
         </div>
 
         <!-- Charts -->
@@ -340,6 +343,7 @@
             updateMetrics(filteredData);
             createCharts(filteredData);
             updateTable(filteredData);
+            updateGroupList(filteredData);
         }
 
         function populateFilters() {
@@ -367,6 +371,13 @@
             groupFilter.addEventListener('change', updateDashboard);
         }
 
+        function parseYearValue(yearLabel) {
+            if (!yearLabel) return null;
+            const parts = yearLabel.split('-');
+            const yearNumber = parseInt(parts[0], 10);
+            return isNaN(yearNumber) ? null : yearNumber;
+        }
+
         function getFilteredData() {
             const yearFilter = document.getElementById('yearFilter').value;
             const groupFilter = document.getElementById('groupFilter').value;
@@ -389,7 +400,10 @@
                 : 0;
 
             const years = [...new Set(data.map(d => d.academicYear))];
-            const latestYear = years.length ? Math.max(...years) : null;
+            const latestYear = years
+                .map(year => ({ label: year, value: parseYearValue(year) }))
+                .filter(y => y.value !== null)
+                .sort((a, b) => b.value - a.value)[0]?.label || null;
             const latestYearData = latestYear !== null
                 ? data.find(d => d.academicYear === latestYear && d.reportingCategoryDescription === 'Total')
                     || data.find(d => d.academicYear === latestYear)
@@ -478,16 +492,27 @@
         }
 
         function createGroupChart(data) {
-            const years = [...new Set(data.map(d => d.academicYear))];
-            const latestYear = years.length ? Math.max(...years) : null;
-            const latestData = latestYear === null ? [] : data.filter(d =>
-                d.academicYear === latestYear &&
-                d.reportingCategoryDescription !== 'Total' &&
-                d.suspensionRate !== null
-            );
+            const latestData = data
+                .filter(d => d.reportingCategoryDescription !== 'Total' && d.suspensionRate !== null)
+                .reduce((acc, record) => {
+                    const existing = acc.get(record.reportingCategoryDescription);
+                    const yearValue = parseYearValue(record.academicYear);
 
-            const groups = latestData.map(d => d.reportingCategoryDescription);
-            const rates = latestData.map(d => d.suspensionRate * 100);
+                    if (!existing || (yearValue !== null && yearValue > existing.yearValue)) {
+                        acc.set(record.reportingCategoryDescription, {
+                            label: record.reportingCategoryDescription,
+                            rate: record.suspensionRate * 100,
+                            yearValue
+                        });
+                    }
+                    return acc;
+                }, new Map());
+
+            const groups = Array.from(latestData.values())
+                .sort((a, b) => (b.rate || 0) - (a.rate || 0));
+
+            const labels = groups.map(g => g.label);
+            const rates = groups.map(g => g.rate);
 
             const ctx = document.getElementById('groupChart').getContext('2d');
             if (charts.group) charts.group.destroy();
@@ -495,7 +520,7 @@
             charts.group = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: groups,
+                    labels: labels,
                     datasets: [{
                         label: 'Suspension Rate (%)',
                         data: rates,
@@ -709,11 +734,28 @@
             tableBody.innerHTML = rows;
         }
 
+        function updateGroupList(data) {
+            const container = document.getElementById('groupList');
+            if (!container) return;
+
+            const groups = [...new Set(data.map(d => d.reportingCategoryDescription))].sort();
+            if (!groups.length) {
+                container.textContent = 'No student groups available for the current filters.';
+                return;
+            }
+
+            container.innerHTML = `
+                <strong>Groups in view:</strong> ${groups.join(', ')}
+                <br><small>Group chart uses the latest available year for each listed group.</small>
+            `;
+        }
+
         function updateDashboard() {
             const filteredData = getFilteredData();
             updateMetrics(filteredData);
             createCharts(filteredData);
             updateTable(filteredData);
+            updateGroupList(filteredData);
         }
 
         // Initialize dashboard when page loads
