@@ -2,7 +2,7 @@
 
 > **Purpose**: This document provides AI assistants with comprehensive context about the CTS-REACH-Custom_V1 repository, including codebase structure, development workflows, naming conventions, and key patterns to follow when making modifications.
 
-**Last Updated**: 2025-11-25
+**Last Updated**: 2025-11-25 (Updated with current file sizes and structure)
 **Project Type**: Educational Data Visualization Dashboard
 **Deployment**: GitHub Pages (Automatic via GitHub Actions)
 
@@ -53,14 +53,15 @@ This repository contains an **interactive single-page web application** that vis
 │   └── workflows/
 │       └── static.yml              # GitHub Pages deployment (auto-triggers on push to main)
 ├── .git/                           # Git repository data
-├── index.html                      # Main dashboard application (765 lines)
+├── index.html                      # Main dashboard application (1566 lines)
 │                                   # Contains: HTML + CSS + JavaScript in single file
-├── clean_dorothy_camp_data.py      # Data cleaning script (80 lines)
-├── dorothy_camp_clean_data.json    # Cleaned data (31 KB, 974 lines)
+├── clean_dorothy_camp_data.py      # Data cleaning script (100 lines)
+├── dorothy_camp_clean_data.json    # Cleaned data (66 KB, 1996 lines, 105 records)
 ├── ev2_DorothyCamp_DataSummary.csv # Raw data - main dataset (54 rows)
 ├── ev2_DorothyCamp_DataSummary-RACE.csv  # Extended data with race categories (51 rows)
 ├── DOROTHY_CAMP_README.md          # User-facing documentation (comprehensive)
 ├── UCLA-Brand-Colors.md            # Brand color specifications
+├── CLAUDE.md                       # AI assistant documentation (this file)
 └── README.md                       # Placeholder (minimal content)
 ```
 
@@ -88,10 +89,12 @@ This repository contains an **interactive single-page web application** that vis
 | **CSS3** | Standard | Styling, responsive grid layout, animations |
 | **JavaScript** | ES6 | Data processing, chart creation, interactivity |
 | **Chart.js** | 4.4.0 | Data visualization library (CDN) |
+| **chartjs-plugin-datalabels** | 2.2.0 | Chart data labels plugin (CDN) |
 
 **CDN Dependencies**:
 ```html
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 ```
 
 ### Backend/Processing
@@ -197,9 +200,10 @@ cleaned_data = []
 
 The entire application is contained in **one HTML file** (`index.html`) with three main sections:
 
-1. **HTML Structure** (lines 1-321): Semantic markup
-2. **CSS Styling** (lines 8-222): Embedded in `<style>` tag
-3. **JavaScript Logic** (lines 323-763): Embedded in `<script>` tag
+1. **HTML Head & Metadata** (lines 1-8): Meta tags, title, CDN script imports
+2. **CSS Styling** (lines 9-230): Embedded in `<style>` tag
+3. **HTML Body Structure** (lines 232-387): Semantic markup
+4. **JavaScript Logic** (lines 388-1564): Embedded in `<script>` tag
 
 ### Global State Management
 
@@ -292,12 +296,62 @@ function createTrendChart(data) {
     charts.trend = new Chart(ctx, {
         type: 'line',
         data: { /* data config */ },
-        options: { /* chart options */ }
+        options: {
+            /* chart options */
+            plugins: {
+                datalabels: getPercentDatalabelsConfig() // Use for percent charts
+            }
+        }
     });
 }
 ```
 
 **Always destroy old charts before creating new ones!**
+
+### Percent Label Formatting Pattern
+
+**CRITICAL**: All percentage-based charts must use the standardized formatting helper:
+
+```javascript
+// Shared configuration defined at line 428
+function getPercentDatalabelsConfig(overrides = {}) {
+    return {
+        align: 'top',
+        anchor: 'end',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderRadius: 4,
+        padding: 4,
+        font: {
+            weight: 'bold',
+            size: 11
+        },
+        formatter: function(value, context) {
+            if (value === null || value === undefined || isNaN(value)) {
+                return 'N/A';
+            }
+            return value.toFixed(1) + '%';
+        },
+        ...overrides  // Allow chart-specific overrides
+    };
+}
+
+// Usage in chart creation
+const chart = new Chart(ctx, {
+    type: 'bar',
+    data: { /* ... */ },
+    options: {
+        plugins: {
+            datalabels: getPercentDatalabelsConfig() // Use this for all percent charts
+        }
+    }
+});
+```
+
+**This ensures consistent formatting across all charts**:
+- Format: `12.3%` (one decimal place)
+- Displays `N/A` for null/undefined values
+- Consistent styling (white background, bold font, padding)
+- Alignment: top/end by default (can be overridden)
 
 ### Error Handling Pattern
 
@@ -316,25 +370,59 @@ async function loadData() {
 
 ### Python ETL Pattern
 
-```python
-def main():
-    # 1. Read CSV with specific encoding (handles non-UTF8)
-    with open(input_file, 'r', encoding='latin-1') as f:
-        reader = csv.DictReader(f)
+**Important**: The script now processes **two CSV files** and combines them:
 
-        # 2. Transform each row
-        for row in reader:
+```python
+def load_csv_rows(path):
+    """Load CSV with latin-1 encoding (handles non-UTF8 characters)"""
+    with open(path, 'r', encoding='latin-1') as f:
+        reader = csv.DictReader(f)
+        return list(reader)
+
+def main():
+    # 1. Define input files
+    input_files = [
+        Path('ev2_DorothyCamp_DataSummary.csv'),      # 54 rows - general data
+        Path('ev2_DorothyCamp_DataSummary-RACE.csv')  # 51 rows - race breakdown
+    ]
+    output_file = 'dorothy_camp_clean_data.json'
+    cleaned_data = []
+
+    # 2. Process each CSV file
+    for path in input_files:
+        if not path.exists():
+            # Handle missing files gracefully
+            continue
+
+        for row in load_csv_rows(path):
+            # 3. Handle column name differences between files
+            suspension_rate_key = 'Suspension Rate [%] (Total)' if 'Suspension Rate [%] (Total)' in row else 'Suspension Rate (Total)'
+
+            # 4. Transform each row
             cleaned_row = {
                 'academicYear': row['AcademicYear'],
                 'cumulativeEnrollment': clean_value(row['CumulativeEnrollment']),
+                'suspensionRate': clean_value(row[suspension_rate_key]),
                 # ... more fields
+                'schoolType': row['School Type'],
+                'sourceFile': path.name  # Track which CSV this came from
             }
             cleaned_data.append(cleaned_row)
 
-    # 3. Write JSON with UTF-8 encoding
+    # 5. Write combined JSON with UTF-8 encoding
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(cleaned_data, f, indent=2)
+
+    # 6. Print summary
+    print(f"✓ Cleaned {len(cleaned_data)} records")
 ```
+
+**Key features**:
+- Processes multiple CSV files in a loop
+- Handles missing files gracefully
+- Adapts to different column names between files
+- Tags each record with `sourceFile` for traceability
+- Combines all data into single JSON output
 
 ---
 
@@ -347,19 +435,21 @@ def main():
 └───────────┬─────────────────────────┘
             │
             ▼
-┌─────────────────────────────────────┐
-│ ev2_DorothyCamp_DataSummary.csv     │
-│ - Raw CSV with 30+ columns          │
-│ - Encoding: latin-1                 │
-│ - Missing values: "*" asterisks     │
-└───────────┬─────────────────────────┘
+┌─────────────────────────────────────┬─────────────────────────────────────┐
+│ ev2_DorothyCamp_DataSummary.csv     │ ev2_DorothyCamp_DataSummary-RACE.csv│
+│ - Raw CSV with 30+ columns          │ - Extended CSV with race categories │
+│ - Encoding: latin-1                 │ - Encoding: latin-1                 │
+│ - 54 rows (general data)            │ - 51 rows (race breakdown)          │
+│ - Missing values: "*" asterisks     │ - Missing values: "*" asterisks     │
+└───────────┬─────────────────────────┴─────────────────────────────────────┘
             │
-            ▼ (Run Python script)
+            ▼ (Run: python3 clean_dorothy_camp_data.py)
 ┌─────────────────────────────────────┐
 │ clean_dorothy_camp_data.py          │
+│ - load_csv_rows(): reads both files │
 │ - clean_value(): type conversion    │
 │ - clean_reporting_category(): fixes │
-│ - Converts CSV → JSON               │
+│ - Converts 2 CSVs → 1 JSON (105 rec)│
 └───────────┬─────────────────────────┘
             │
             ▼
@@ -368,27 +458,31 @@ def main():
 │ - Encoding: UTF-8                   │
 │ - Field names: camelCase            │
 │ - Types: null, int, float, string   │
+│ - 105 records (54 + 51)             │
+│ - 66 KB, 1996 lines                 │
 └───────────┬─────────────────────────┘
             │
-            ▼ (Browser Fetch API)
+            ▼ (Browser: fetch API)
 ┌─────────────────────────────────────┐
 │ index.html (JavaScript)             │
 │ - Loads JSON asynchronously         │
-│ - Stores in allData global          │
+│ - Stores in allData global (105 rec)│
 └───────────┬─────────────────────────┘
             │
             ▼
 ┌─────────────────────────────────────┐
 │ Data Processing Layer               │
-│ - Filter by year/group              │
+│ - Filter by year/group/race         │
 │ - Aggregate metrics                 │
 │ - Transform for charts              │
+│ - Apply percent formatting          │
 └───────────┬─────────────────────────┘
             │
             ▼
 ┌─────────────────────────────────────┐
-│ Chart.js Library                    │
+│ Chart.js + chartjs-plugin-datalabels│
 │ - Renders visualizations            │
+│ - Standardized percent labels       │
 │ - Handles interactions              │
 └───────────┬─────────────────────────┘
             │
@@ -396,8 +490,9 @@ def main():
 ┌─────────────────────────────────────┐
 │ Browser Display                     │
 │ - Metrics cards                     │
-│ - 5 interactive charts              │
-│ - Data table                        │
+│ - Multiple interactive charts       │
+│ - Filterable data table             │
+│ - CSV export functionality          │
 └─────────────────────────────────────┘
 ```
 
@@ -510,7 +605,7 @@ git push origin main
 
 ### Adding a New Chart
 
-1. **Add canvas element in HTML** (around line 250-280):
+1. **Add canvas element in HTML** (around line 300-350):
    ```html
    <div class="chart-container">
        <h3>Your New Chart Title</h3>
@@ -518,7 +613,7 @@ git push origin main
    </div>
    ```
 
-2. **Create chart function in JavaScript** (around line 500-700):
+2. **Create chart function in JavaScript** (around line 850-1350):
    ```javascript
    function createYourNewChart(data) {
        const ctx = document.getElementById('yourNewChart').getContext('2d');
@@ -545,21 +640,21 @@ git push origin main
    }
    ```
 
-3. **Call in `createCharts()` function** (around line 490):
+3. **Call in chart initialization section** (around line 640-660):
    ```javascript
-   function createCharts(data) {
-       createTrendChart(data);
-       createGroupChart(data);
-       createTypeChart(data);
-       createEnrollmentChart(data);
-       createGenderChart(data);
+   function initializeDashboard() {
+       populateFilters();
+       updateMetrics(getFilteredDataForMetrics());
+       createTrendChart(getFilteredDataForTrend());
+       // ... other chart creation calls
        createYourNewChart(data); // Add here
+       updateTable();
    }
    ```
 
 ### Adding a New Filter
 
-1. **Add select element in HTML** (around line 236):
+1. **Add select element in HTML** (around line 260-280):
    ```html
    <div class="filter-group">
        <label for="yourNewFilter">Your Filter:</label>
@@ -570,7 +665,7 @@ git push origin main
    </div>
    ```
 
-2. **Populate filter in `populateFilters()`** (around line 349):
+2. **Populate filter in `populateFilters()`** (around line 650):
    ```javascript
    const yourOptions = [...new Set(allData.map(d => d.yourField))].sort();
    const yourFilter = document.getElementById('yourNewFilter');
@@ -585,7 +680,7 @@ git push origin main
    yourFilter.addEventListener('change', updateDashboard);
    ```
 
-3. **Update `getFilteredData()`** (around line 381):
+3. **Update `getFilteredDataForMetrics()` and/or `getFilteredDataForTrend()`** (around line 772-792):
    ```javascript
    const yourFilter = document.getElementById('yourNewFilter').value;
 
@@ -617,7 +712,7 @@ git push origin main
 
 ### Changing Colors/Styling
 
-**Primary color palette** (defined in CSS around lines 15-80):
+**Primary color palette** (defined in CSS around lines 15-100):
 ```css
 :root {
     --primary-blue: #2C5F8D;
@@ -628,7 +723,7 @@ git push origin main
 }
 ```
 
-**Chart colors** (in Chart.js config around lines 500-700):
+**Chart colors** (in Chart.js config around lines 850-1350):
 ```javascript
 backgroundColor: '#2C5F8D',  // Change this
 borderColor: '#4A90C2',      // And this
@@ -666,7 +761,7 @@ From UCLA Brand Guidelines:
 
 ### Responsive Design
 
-**Breakpoints** (in CSS around lines 180-220):
+**Breakpoints** (in CSS around lines 200-230):
 ```css
 /* Mobile: Default styles */
 
@@ -887,21 +982,24 @@ try {
 
 ### File Line Number Guide
 
-**index.html** (765 lines):
-- Lines 1-7: HTML head, meta tags
-- Lines 8-222: CSS styling
-- Lines 223-321: HTML body structure
-- Lines 323-763: JavaScript application logic
+**index.html** (1566 lines):
+- Lines 1-8: HTML head, meta tags, CDN imports
+- Lines 9-230: CSS styling
+- Lines 231: `</head>` closing tag
+- Lines 232-387: HTML body structure
+- Lines 388-1564: JavaScript application logic
+- Lines 1565-1566: Closing tags
 
-**Key JavaScript Functions** (approximate lines):
-- `loadData()`: Line 328
-- `initializeDashboard()`: Line 340
-- `populateFilters()`: Line 349
-- `getFilteredData()`: Line 381
-- `updateMetrics()`: Line 392
-- `createCharts()`: Line 490
-- `createTrendChart()`: Line 500
-- `updateTable()`: Line 600
+**Key JavaScript Functions** (exact lines):
+- `getPercentDatalabelsConfig()`: Line 428 (shared percent label config)
+- `loadData()`: Line 448
+- `initializeDashboard()`: Line 628
+- `populateFilters()`: Line 650
+- `getFilteredDataForMetrics()`: Line 772
+- `getFilteredDataForTrend()`: Line 781
+- `updateMetrics()`: Line 792
+- `createTrendChart()`: Line 853
+- `updateTable()`: Line 1371
 
 ### Essential Commands
 
@@ -921,7 +1019,7 @@ git push origin main
 
 ### Key Data Fields
 
-**JSON Structure** (each record):
+**JSON Structure** (each record - 105 total records):
 ```json
 {
   "academicYear": "2023-24",
@@ -931,15 +1029,23 @@ git push origin main
   "cumulativeEnrollment": 245,
   "totalSuspensions": 89,
   "uniqueStudentsSuspended": 67,
+  "uniqueStudentsSuspendedDefianceOnly": 32,
   "suspensionRate": 0.273,
   "suspensionsViolentWithInjury": 12,
   "suspensionsViolentNoInjury": 23,
   "suspensionsWeapons": 3,
   "suspensionsDrugs": 1,
   "suspensionsDefianceOnly": 34,
-  "suspensionsOther": 16
+  "suspensionsOther": 16,
+  "schoolType": "Juvenile Court School",
+  "sourceFile": "ev2_DorothyCamp_DataSummary.csv"
 }
 ```
+
+**Note**: The JSON now combines data from both CSV files:
+- 54 records from `ev2_DorothyCamp_DataSummary.csv`
+- 51 records from `ev2_DorothyCamp_DataSummary-RACE.csv`
+- Total: 105 records
 
 ---
 
@@ -977,14 +1083,25 @@ If data grows significantly (>1000 records):
 - Implement filter debouncing
 - Consider lazy loading of chart data
 - May need to split into multiple files
+- Consider moving to a database solution
 
-Current architecture is optimized for **small-to-medium datasets** (50-500 records).
+Current architecture is optimized for **small-to-medium datasets** (100-500 records).
+**Current size**: 105 records across 7 academic years with multiple demographic breakdowns.
 
 ---
 
 ## Version History
 
-- **2025-11-25**: Initial CLAUDE.md created with comprehensive documentation
+- **2025-11-25 (Latest Update)**: Updated CLAUDE.md with accurate file sizes, line numbers, and current structure
+  - index.html expanded from 765 to 1566 lines
+  - Added chartjs-plugin-datalabels dependency for consistent percent formatting
+  - Data expanded from ~50 to 105 records (combining both CSV sources)
+  - Added new data fields: `uniqueStudentsSuspendedDefianceOnly`, `schoolType`, `sourceFile`
+  - Multiple PRs focusing on standardizing data labels across charts
+  - Added CSV export functionality
+  - New helper functions: `getPercentDatalabelsConfig()`, `getFilteredDataForMetrics()`, `getFilteredDataForTrend()`
+
+- **2025-11-25 (Initial)**: Initial CLAUDE.md created with comprehensive documentation
 - **2025-11**: Recent commits: Updated dashboard to include all race categories, show all student groups
 
 ---
