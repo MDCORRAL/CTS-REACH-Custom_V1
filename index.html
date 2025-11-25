@@ -754,6 +754,14 @@
                 ? rateRecords.reduce((sum, d) => sum + d.suspensionRate, 0) / rateRecords.length
                 : 0;
 
+            const yearFilter = document.getElementById('metricsYearFilter')?.value || 'all';
+            const yearContext = yearFilter === 'all'
+                ? 'Across all available years'
+                : `for ${yearFilter}`;
+            const rateContext = yearFilter === 'all'
+                ? 'Mean across all available years'
+                : `Mean for ${yearFilter}`;
+
             const years = [...new Set(data.map(d => d.academicYear))];
             const latestYear = years
                 .map(year => ({ label: year, value: parseYearValue(year) }))
@@ -768,22 +776,22 @@
                 <div class="metric-card">
                     <div class="metric-label">Total Enrollment</div>
                     <div class="metric-value">${totalEnrollment.toLocaleString()}</div>
-                    <div class="metric-subtitle">Across all years</div>
+                    <div class="metric-subtitle">Enrollment ${yearContext}</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Total Suspensions</div>
                     <div class="metric-value">${totalSuspensions.toLocaleString()}</div>
-                    <div class="metric-subtitle">All incidents</div>
+                    <div class="metric-subtitle">Total incidents ${yearContext}</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Students Suspended</div>
                     <div class="metric-value">${totalStudentsSuspended.toLocaleString()}</div>
-                    <div class="metric-subtitle">Unduplicated count</div>
+                    <div class="metric-subtitle">Unduplicated count ${yearContext}</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Avg Suspension Rate</div>
                     <div class="metric-value">${(avgSuspensionRate * 100).toFixed(1)}%</div>
-                    <div class="metric-subtitle">Mean across selected records</div>
+                    <div class="metric-subtitle">${rateContext}</div>
                 </div>
             `;
 
