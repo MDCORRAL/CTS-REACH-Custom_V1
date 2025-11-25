@@ -342,26 +342,51 @@
         // Load and process data
         async function loadData() {
             try {
-                const [baseResult, raceResult] = await Promise.all([
-                    fetchCsvData('ev2_DorothyCamp_DataSummary.csv'),
-                    fetchCsvData('ev2_DorothyCamp_DataSummary-RACE.csv', true)
-                ]);
+                const cleanJson = await fetchJsonData('dorothy_camp_clean_data.json');
 
-                dataSources = {
-                    base: baseResult.loaded,
-                    race: raceResult.loaded
-                };
+                if (cleanJson.loaded) {
+                    allData = cleanJson.rows;
+                    dataSources = {
+                        base: cleanJson.sources.has('ev2_DorothyCamp_DataSummary.csv'),
+                        race: cleanJson.sources.has('ev2_DorothyCamp_DataSummary-RACE.csv')
+                    };
+                } else {
+                    const [baseResult, raceResult] = await Promise.all([
+                        fetchCsvData('ev2_DorothyCamp_DataSummary.csv'),
+                        fetchCsvData('ev2_DorothyCamp_DataSummary-RACE.csv', true)
+                    ]);
 
-                if (!dataSources.base) {
-                    throw new Error('Base summary sheet (ev2_DorothyCamp_DataSummary.csv) is required but could not be loaded.');
+                    dataSources = {
+                        base: baseResult.loaded,
+                        race: raceResult.loaded
+                    };
+
+                    if (!dataSources.base) {
+                        throw new Error('Base summary sheet (ev2_DorothyCamp_DataSummary.csv) is required but could not be loaded.');
+                    }
+
+                    allData = [...baseResult.rows, ...raceResult.rows];
                 }
-
-                allData = [...baseResult.rows, ...raceResult.rows];
 
                 initializeDashboard();
             } catch (error) {
                 console.error('Error loading data:', error);
-                alert('Error loading data. Please ensure both CSV files are in the same directory.');
+                alert('Error loading data. Please ensure both CSV files or the combined JSON are in the same directory.');
+            }
+        }
+
+        async function fetchJsonData(path) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) return { loaded: false, rows: [], sources: new Set() };
+
+                const json = await response.json();
+                const rows = json.map(normalizeCleanRow);
+                const sources = new Set(json.map(r => r.sourceFile).filter(Boolean));
+                return { loaded: true, rows, sources };
+            } catch (error) {
+                console.warn(`Combined JSON ${path} could not be loaded:`, error);
+                return { loaded: false, rows: [], sources: new Set() };
             }
         }
 
@@ -385,6 +410,28 @@
                 }
                 throw error;
             }
+        }
+
+        function normalizeCleanRow(row) {
+            return {
+                academicYear: row.academicYear ?? row['AcademicYear'],
+                schoolName: row.schoolName ?? row['SchoolName'],
+                reportingCategory: row.reportingCategory ?? row['ReportingCategory'],
+                reportingCategoryDescription: cleanReportingCategory(row.reportingCategoryDescription ?? row['ReportingCategory_Description']),
+                cumulativeEnrollment: cleanValue(row.cumulativeEnrollment ?? row['CumulativeEnrollment']),
+                totalSuspensions: cleanValue(row.totalSuspensions ?? row['Total Suspensions']),
+                uniqueStudentsSuspended: cleanValue(row.uniqueStudentsSuspended ?? row['Unduplicated Count of Students Suspended (Total)']),
+                uniqueStudentsSuspendedDefianceOnly: cleanValue(row.uniqueStudentsSuspendedDefianceOnly ?? row['Unduplicated Count of Students Suspended (Defiance-Only)']),
+                suspensionRate: cleanValue(row.suspensionRate ?? row['Suspension Rate (Total)']),
+                suspensionsViolentWithInjury: cleanValue(row.suspensionsViolentWithInjury ?? row['Suspension Count Violent Incident (Injury)']),
+                suspensionsViolentNoInjury: cleanValue(row.suspensionsViolentNoInjury ?? row['Suspension Count Violent Incident (No Injury)']),
+                suspensionsWeapons: cleanValue(row.suspensionsWeapons ?? row['Suspension Count Weapons Possession']),
+                suspensionsDrugs: cleanValue(row.suspensionsDrugs ?? row['Suspension Count Illicit Drug-Related']),
+                suspensionsDefianceOnly: cleanValue(row.suspensionsDefianceOnly ?? row['Suspension Count Defiance-Only']),
+                suspensionsOther: cleanValue(row.suspensionsOther ?? row['Suspension Count Other Reasons']),
+                schoolType: row.schoolType ?? row['School Type'],
+                sourceFile: row.sourceFile
+            };
         }
 
         function parseCsv(text) {
@@ -454,7 +501,11 @@
 
         function cleanValue(value) {
             if (value === undefined || value === null) return null;
-            const trimmed = value.trim();
+
+            // Preserve numeric values coming from pre-cleaned JSON
+            if (typeof value === 'number') return value;
+
+            const trimmed = String(value).trim();
             if (trimmed === '' || trimmed === '*') return null;
             const num = Number(trimmed);
             return Number.isNaN(num) ? trimmed : num;

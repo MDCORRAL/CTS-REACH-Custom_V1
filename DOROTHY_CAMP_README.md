@@ -6,8 +6,8 @@ This interactive HTML dashboard visualizes suspension data from Dorothy Camp Kir
 ## Files Included
 
 ### 1. Raw Data
-- **ev2_DorothyCamp_DataSummary.csv** - Original raw data file containing suspension records
-- **ev2_DorothyCamp_DataSummary-RACE.csv** - Companion sheet with race/ethnicity breakdowns
+- **ev2_DorothyCamp_DataSummary.csv** - Original raw data file containing suspension records (non-race student groups)
+- **ev2_DorothyCamp_DataSummary-RACE.csv** - Companion sheet with race/ethnicity breakdowns (required for race filters)
 
 ### 2. Data Processing
 - **clean_dorothy_camp_data.py** - Python script that cleans and transforms the raw CSV data
@@ -21,14 +21,15 @@ This interactive HTML dashboard visualizes suspension data from Dorothy Camp Kir
 - **dorothy_camp_clean_data.json** - Cleaned data in JSON format, ready for visualization
 
 ### 4. Interactive Dashboard
-- **dorothy_camp_dashboard.html** - Interactive HTML dashboard with visualizations
+- **index.html** - Interactive HTML dashboard with visualizations (prefers the merged JSON when present)
 
 ## How to Use
 
 ### Quick Start
 1. Ensure all files are in the same directory
-2. Open `dorothy_camp_dashboard.html` in a web browser
-3. The dashboard will automatically load and display the data
+2. Run `python3 clean_dorothy_camp_data.py` to regenerate `dorothy_camp_clean_data.json` after updating either CSV
+3. Open `index.html` in a web browser
+4. The dashboard will automatically load the merged JSON; if it is missing, it will fall back to the two CSV files
 
 ### Dashboard Features
 
@@ -86,6 +87,7 @@ The dashboard tracks suspension data for the following student populations:
 - **Homeless (SH)**
 - **Socioeconomically Disadvantaged (SS)**
 - **Students with Disabilities (SD)**
+- **Race/Ethnicity groups** (from the race sheet): American Indian or Alaska Native, Asian, Black or African American, Filipino, Hispanic or Latino, Native Hawaiian or Pacific Islander, Two or More Races, White
 - **Total (TA)** - Overall school totals
 
 ## Data Privacy Note
