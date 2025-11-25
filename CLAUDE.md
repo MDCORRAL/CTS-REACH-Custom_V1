@@ -816,8 +816,8 @@ charts.trend = new Chart(ctx, { ... });
 
 #### 7. **Percent Label Consistency**
 
-- All percentage data labels on charts must use the shared helpers in `index.html`: `percentLabelFormatter` and `getPercentDatalabelsConfig()`.
-- Format percentages as **one decimal place with a trailing percent sign** (e.g., `12.3%`) and show `N/A` for missing or invalid values.
+- All percentage data labels on charts must use the shared helpers in `index.html`: `percentLabelFormatter`, `getPercentDatalabelsConfig()`, and the shared `percentDatalabels` config instance.
+- Format percentages as **one decimal place with a trailing percent sign** (e.g., `12.3%`) and show `N/A` for missing or invalid values. Reuse the `percentDatalabels` config for every percent-based chart so styling (background, padding, alignment, font weight) stays identical across charts.
 - Keep alignment/anchor consistent (`align: 'top'`, `anchor: 'end'`) unless a chart explicitly requires a different override.
 
 #### 8. **Responsive Design Required**

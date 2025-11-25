@@ -435,6 +435,8 @@
             };
         }
 
+        const percentDatalabels = getPercentDatalabelsConfig();
+
         // Load and process data
         async function loadData() {
             try {
@@ -890,7 +892,7 @@
                             display: true,
                             position: 'top'
                         },
-                        datalabels: getPercentDatalabelsConfig()
+                        datalabels: percentDatalabels
                     },
                     scales: {
                         y: {
@@ -977,7 +979,7 @@
                         legend: {
                             display: false
                         },
-                        datalabels: getPercentDatalabelsConfig()
+                        datalabels: percentDatalabels
                     },
                     scales: {
                         x: {
@@ -1101,7 +1103,7 @@
                                 }
                             }
                         },
-                        datalabels: getPercentDatalabelsConfig()
+                        datalabels: percentDatalabels
                     },
                     scales: {
                         y: {
@@ -1344,7 +1346,7 @@
                             display: true,
                             position: 'top'
                         },
-                        datalabels: getPercentDatalabelsConfig()
+                        datalabels: percentDatalabels
                     },
                     scales: {
                         y: {
