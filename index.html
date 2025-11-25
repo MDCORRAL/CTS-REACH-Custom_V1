@@ -36,6 +36,12 @@
             opacity: 0.9;
         }
 
+        .header .subtext {
+            font-size: 0.9rem;
+            opacity: 0.85;
+            margin-top: 0.35rem;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -226,6 +232,7 @@
     <div class="header">
         <h1>Dorothy Camp Kirby School</h1>
         <p>Suspension Data Analysis Dashboard - Juvenile Court School</p>
+        <p class="subtext">UCLA CTS REACH Network: Custom Created Partner Dashboard</p>
     </div>
 
     <div class="container">
@@ -975,6 +982,16 @@
             const pointRadius = years.length <= 2 ? 8 : (years.length <= 4 ? 6 : 4);
             const pointHoverRadius = pointRadius + 2;
 
+            const lineColors = ['#003B5C', '#005587', '#2774AE', '#8BB8E8', '#FFB81C', '#FFC72C'];
+            const fillColors = [
+                'rgba(0, 59, 92, 0.15)',
+                'rgba(0, 85, 135, 0.15)',
+                'rgba(39, 116, 174, 0.15)',
+                'rgba(139, 184, 232, 0.2)',
+                'rgba(255, 184, 28, 0.2)',
+                'rgba(255, 199, 44, 0.2)'
+            ];
+
             const datasets = typeNames.map((typeName, idx) => {
                 const field = typeFields[idx];
 
@@ -992,14 +1009,13 @@
                     return allSuspensions > 0 ? (typeTotal / allSuspensions) * 100 : 0;
                 });
 
-                const borderColor = ['#D32F2F', '#F44336', '#FF5722', '#FF9800', '#FFC107', '#FFEB3B'][idx];
+                const borderColor = lineColors[idx % lineColors.length];
 
                 return {
                     label: typeName,
                     data: percentages,
                     borderColor: borderColor,
-                    backgroundColor: ['rgba(211, 47, 47, 0.1)', 'rgba(244, 67, 54, 0.1)', 'rgba(255, 87, 34, 0.1)',
-                                     'rgba(255, 152, 0, 0.1)', 'rgba(255, 193, 7, 0.1)', 'rgba(255, 235, 59, 0.1)'][idx],
+                    backgroundColor: fillColors[idx % fillColors.length],
                     borderWidth: 2,
                     fill: false,
                     tension: 0.4,
@@ -1093,13 +1109,13 @@
                         {
                             label: 'Enrollment',
                             data: enrollment,
-                            backgroundColor: '#4A90C2',
+                            backgroundColor: '#2774AE',
                             yAxisID: 'y'
                         },
                         {
                             label: 'Total Suspensions',
                             data: suspensions,
-                            backgroundColor: '#FF8A65',
+                            backgroundColor: '#FFB81C',
                             yAxisID: 'y1'
                         }
                     ]
